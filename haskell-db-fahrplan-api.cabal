@@ -16,9 +16,13 @@ extra-source-files:  README.md
 cabal-version:       >=1.10
 
 library
-  -- exposed-modules:
+  exposed-modules:     Web.DeutscheBahn.API.Schedule
+                     , Web.DeutscheBahn.API.Schedule.Data
   -- other-modules:
   -- other-extensions:
   build-depends:       base >=4.8 && <4.9
+                     , coordinate >= 0.0.19
+                     , text >= 1.2
+                     , time >= 1.5
   hs-source-dirs:      src
   default-language:    Haskell2010
