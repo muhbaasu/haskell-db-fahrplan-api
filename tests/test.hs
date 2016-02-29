@@ -7,6 +7,7 @@ import Data.Text                           (Text)
 import Data.Text.Encoding                  (encodeUtf8)
 import Data.Time.Clock                     (UTCTime)
 import Data.Time.ISO8601                   (parseISO8601)
+import Data.Time.LocalTime                 (LocalTime, TimeZone, hoursToTimeZone, utcToLocalTime)
 import NeatInterpolation
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -35,8 +36,12 @@ departureJSON =  fromStrict $ encodeUtf8 [text|
   }
   }|]
 
-departureTime :: UTCTime
-departureTime = fromJust $ parseISO8601 "2016-02-22T14:01:00Z"
+germanyTimeZone :: TimeZone
+germanyTimeZone = hoursToTimeZone 1 -- +1 UTC non-summer
+
+departureTime :: LocalTime
+departureTime = utcToLocalTime germanyTimeZone departureUTC
+  where departureUTC = fromJust $ parseISO8601 "2016-02-22T14:01:00Z"
 
 departure :: Connection
 departure = Connection "RE 15306" RE (StopId 8000105) departureTime "Frankfurt(Main)Hbf" "Limburg(Lahn)" "3" ref

@@ -8,7 +8,6 @@ import           Data.Geo.Coordinate.Coordinate ((<°>), Coordinate, longitudeMi
 import           Data.Maybe                     (fromJust)
 import           Data.Text                      (Text, unpack)
 import           Data.Time.Calendar             (Day)
-import           Data.Time.Clock                (UTCTime)
 import           Data.Time.LocalTime            (LocalTime(..), TimeOfDay, TimeZone, hoursToTimeZone, localTimeToUTC)
 import           Data.Time.Format               (defaultTimeLocale, parseTimeOrError)
 import           GHC.Generics                   (Generic)
@@ -23,12 +22,6 @@ parseApiTime str = parseTimeOrError False defaultTimeLocale "%H:%M" (unpack str)
 -- | parse time formatted as e.g. 2016-02-22
 parseApiDate :: Text -> Day
 parseApiDate str = parseTimeOrError False defaultTimeLocale "%Y-%m-%d" (unpack str)
-
-germanyTimeZone :: TimeZone
-germanyTimeZone = hoursToTimeZone 1 -- +1 UTC non-summer
-
-toUTCTime :: TimeOfDay -> Day -> UTCTime
-toUTCTime time day = localTimeToUTC germanyTimeZone $ LocalTime day time
 
 data StopLocation = StopLocation
   { _stopLocationId           :: StopId
@@ -65,7 +58,7 @@ data Connection = Connection
   , _connectionTransportType :: TransportType
   , _connectionStopId        :: StopId
   -- | combination of date and time, time zone assumed to be GMT/UTC + 01:00
-  , _connectionDateTime      :: UTCTime
+  , _connectionDateTime      :: LocalTime
   , _connectionStop          :: Text
   , _connectionDirection     :: Text
   , _connectionTrack         :: Text
@@ -77,9 +70,9 @@ instance FromJSON Connection where
                           v .: "name" <*>
                           v .: "type" <*>
                           (StopId . read <$> v .: "stopid") <*> -- API sends Int as String
-                          (toUTCTime <$>
-                             (parseApiTime <$> v .: "time") <*>
-                             (parseApiDate <$> v .: "date")) <*>
+                          (LocalTime <$>
+                             (parseApiDate <$> v .: "date") <*>
+                             (parseApiTime <$> v .: "time")) <*>
                           v .: "stop" <*>
                           v .: "direction" <*>
                           v .: "track" <*>
@@ -114,8 +107,8 @@ data Stop = Stop
   -- | combination of Latitude, Longitude
   , _stopCoordinate    :: Coordinate
   , _stopRouteIndex    :: RouteIndex
-  -- | combination of date and time, time zone assumed to be GMT/UTC + 01:00
-  , _stopDepartureTime :: UTCTime
+  -- | combination of date and time
+  , _stopDepartureTime ::LocalTime
   , _stopTrack         :: Text
   } deriving Show
 
@@ -125,9 +118,9 @@ instance FromJSON Stop where
                          v .: "name" <*>
                          (fromJust <$> ((<°>) <$> (v .: "lat") <*> (v .: "lon"))) <*>
                          (RouteIndex <$>  v .: "routeIdx") <*>
-                         (toUTCTime <$>
-                            (parseApiTime <$> v .: "depTime") <*>
-                            (parseApiDate <$> v .: "depDate")) <*>
+                         (LocalTime <$>
+                            (parseApiDate <$> v .: "depDate") <*>
+                            (parseApiTime <$> v .: "depTime")) <*>
                          v .: "track"
 
 instance ToJSON Stop where
