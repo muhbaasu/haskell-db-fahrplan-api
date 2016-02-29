@@ -5,14 +5,13 @@ module Web.DeutscheBahn.API.Schedule.Data where
 
 import           Data.Aeson
 import           Data.Geo.Coordinate.Coordinate ((<°>), Coordinate, longitudeMinutes, latitudeMinutes)
-import           Data.Maybe (fromJust)
-import           Data.Text (Text, unpack)
+import           Data.Maybe                     (fromJust)
+import           Data.Text                      (Text, unpack)
 import           Data.Time.Calendar             (Day)
 import           Data.Time.Clock                (UTCTime)
-import           Data.Time.ISO8601              (parseISO8601)
 import           Data.Time.LocalTime            (LocalTime(..), TimeOfDay, TimeZone, hoursToTimeZone, localTimeToUTC)
-import           Data.Time.Format (defaultTimeLocale, parseTimeOrError)
-import           GHC.Generics (Generic)
+import           Data.Time.Format               (defaultTimeLocale, parseTimeOrError)
+import           GHC.Generics                   (Generic)
 
 newtype RouteIndex = RouteIndex {unRouteIndex :: Int} deriving (Eq, Show, Ord, Generic, ToJSON, FromJSON)
 newtype StopId     = StopId     {unStopId     :: Int} deriving (Eq, Show, Ord, Generic, ToJSON, FromJSON)
@@ -44,13 +43,13 @@ data TransportType =
   | IRE
   | RE
   | SBahn
-  deriving Show
+  deriving (Show, Eq)
 
 instance FromJSON TransportType where
   parseJSON (String "ICE") =  return ICE
   parseJSON (String "IC")  =  return IC
-  parseJSON (String "IRE") =  return IC
-  parseJSON (String "RE")  =  return IC
+  parseJSON (String "IRE") =  return IRE
+  parseJSON (String "RE")  =  return RE
   parseJSON (String "S")   =  return SBahn
 
 instance ToJSON TransportType where
@@ -71,7 +70,7 @@ data Connection = Connection
   , _connectionDirection     :: Text
   , _connectionTrack         :: Text
   , _connectionJourneyRef    :: JourneyRef
-  } deriving Show
+  } deriving (Show, Eq)
 
 instance FromJSON Connection where
   parseJSON (Object v) = Connection <$>
@@ -88,7 +87,7 @@ instance FromJSON Connection where
 
 data JourneyRef = JourneyRef
   { _journeyRef :: Text
-  } deriving Show
+  } deriving (Show, Eq)
 
 instance FromJSON JourneyRef where
   parseJSON (Object v) = JourneyRef <$> v .: "ref"

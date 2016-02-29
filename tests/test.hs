@@ -2,8 +2,11 @@
 
 import Data.Aeson
 import Data.ByteString.Lazy
+import Data.Maybe                          (fromJust)
 import Data.Text                           (Text)
 import Data.Text.Encoding                  (encodeUtf8)
+import Data.Time.Clock                     (UTCTime)
+import Data.Time.ISO8601                   (parseISO8601)
 import NeatInterpolation
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -28,22 +31,31 @@ departureJSON =  fromStrict $ encodeUtf8 [text|
   "direction":"Limburg(Lahn)",
   "track":"3",
   "JourneyDetailRef":{
-  "ref":"ref"
+  "ref":"http://DOMAINE-TOBE-DEFI-NED.de/bin/"
   }
   }|]
 
-ref :: ByteString
-ref = fromStrict $ encodeUtf8 [text|
+departureTime :: UTCTime
+departureTime = fromJust $ parseISO8601 "2016-02-22T14:01:00Z"
+
+departure :: Connection
+departure = Connection "RE 15306" RE (StopId 8000105) departureTime "Frankfurt(Main)Hbf" "Limburg(Lahn)" "3" ref
+
+refJSON :: ByteString
+refJSON = fromStrict $ encodeUtf8 [text|
   {
   "ref":"http://DOMAINE-TOBE-DEFI-NED.de/bin/"
   }|]
+
+ref :: JourneyRef
+ref = JourneyRef "http://DOMAINE-TOBE-DEFI-NED.de/bin/"
 
 unitTests = testGroup "Parsing"
 
   [
     testCase "parse JourneyDetailRef" $
-        Right "http://DOMAINE-TOBE-DEFI-NED.de/bin/" @=? (_journeyRef <$> (eitherDecode ref :: Either String JourneyRef ))
+        Right ref @=? (eitherDecode refJSON :: Either String JourneyRef )
   , testCase "parse Departure" $
-      Right "RE 15306" @=? (_connectionName <$> (eitherDecode departureJSON :: Either String Connection))
+      Right departure @=? (eitherDecode departureJSON :: Either String Connection)
   ]
 
