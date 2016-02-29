@@ -28,7 +28,15 @@ data StopLocation = StopLocation
   , _stopLocationName         :: Text
   -- | combination of Latitude, Longitude
   , _stopLocationCoordinate   :: Coordinate
-  } deriving Show
+  } deriving (Show, Eq)
+
+instance FromJSON StopLocation where
+  parseJSON (Object v) = StopLocation <$>
+                          (StopId . read <$> v .: "id") <*>
+                          v .: "name" <*>
+                          (fromJust <$> ((<°>) <$>
+                             (read <$> v .: "lat") <*>
+                             (read <$> v .: "lon")))
 
 data TransportType =
     ICE

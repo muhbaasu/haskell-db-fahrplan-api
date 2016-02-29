@@ -2,6 +2,7 @@
 
 import Data.Aeson
 import Data.ByteString.Lazy
+import Data.Geo.Coordinate.Coordinate      ((<°>), Coordinate)
 import Data.Maybe                          (fromJust)
 import Data.Text                           (Text)
 import Data.Text.Encoding                  (encodeUtf8)
@@ -55,12 +56,29 @@ refJSON = fromStrict $ encodeUtf8 [text|
 ref :: JourneyRef
 ref = JourneyRef "http://DOMAINE-TOBE-DEFI-NED.de/bin/"
 
+stopLocationJSON :: ByteString
+stopLocationJSON = fromStrict $ encodeUtf8 [text|
+{
+ "name":"Frankfurt(Main)Hbf",
+ "lon":"8.663785",
+ "lat":"50.107149",
+ "id":"008000105"
+}|]
+
+stopCoordinate :: Coordinate
+stopCoordinate = fromJust $ (<°>) 50.107149 8.663785
+
+stopLocation :: StopLocation
+stopLocation = StopLocation (StopId 008000105) "Frankfurt(Main)Hbf" stopCoordinate
+
 unitTests = testGroup "Parsing"
 
   [
     testCase "parse JourneyDetailRef" $
-        Right ref @=? (eitherDecode refJSON :: Either String JourneyRef )
+      Right ref @=? (eitherDecode refJSON :: Either String JourneyRef)
   , testCase "parse Departure" $
       Right departure @=? (eitherDecode departureJSON :: Either String Connection)
+  , testCase "parse StopLocation" $
+      Right stopLocation @=? (eitherDecode stopLocationJSON :: Either String StopLocation)
   ]
 
