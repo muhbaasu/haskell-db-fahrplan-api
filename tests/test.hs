@@ -12,6 +12,7 @@ import Data.Time.LocalTime                 (LocalTime, TimeZone, hoursToTimeZone
 import NeatInterpolation
 import Test.Tasty
 import Test.Tasty.HUnit
+import Test.Tasty.QuickCheck as QC
 
 import Web.DeutscheBahn.API.Schedule
 import Web.DeutscheBahn.API.Schedule.Data
@@ -19,7 +20,7 @@ import Web.DeutscheBahn.API.Schedule.Data
 main = defaultMain tests
 
 tests :: TestTree
-tests = testGroup "Tests" [unitTests]
+tests = testGroup "Tests" [unitTests, quickCheckTests]
 
 departureJSON :: ByteString
 departureJSON =  fromStrict $ encodeUtf8 [text|
@@ -85,5 +86,23 @@ unitTests = testGroup "Parsing"
       Right departure @=? decoded
   , testCase "parse StopLocation" $
       Right stopLocation @=? (eitherDecode stopLocationJSON :: Either String StopLocation)
+  ]
+
+instance Arbitrary Connection where
+  arbitrary = do
+    name <- arbitrary
+    transportType <- arbitrary
+    stopId <- arbitrary
+    time <- arbitrary
+    stop <- arbitrary
+    dir <- arbitrary
+    track <- arbitrary
+    ref <- arbitrary
+    return Connection name transportType stopId time stop dir track ref
+
+quickCheckTests = testGroup "Parsing and Serialization"
+  [ QC.testProperty "serialize/deserialize connection" $
+      \connection ->
+        Right connection == ((eitherDecode (encode (connection :: Connection))) :: Either String Connection)
   ]
 
