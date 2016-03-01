@@ -37,15 +37,16 @@ departureJSON =  fromStrict $ encodeUtf8 [text|
   }
   }|]
 
+-- | +1 UTC non-summer
 germanyTimeZone :: TimeZone
-germanyTimeZone = hoursToTimeZone 1 -- +1 UTC non-summer
+germanyTimeZone = hoursToTimeZone 1
 
 departureTime :: LocalTime
 departureTime = utcToLocalTime germanyTimeZone departureUTC
   where departureUTC = fromJust $ parseISO8601 "2016-02-22T14:01:00Z"
 
 departure :: Connection
-departure = Connection "RE 15306" RE (StopId 8000105) departureTime "Frankfurt(Main)Hbf" "Limburg(Lahn)" "3" ref
+departure = Connection "RE 15306" RE (StopId "8000105") departureTime "Frankfurt(Main)Hbf" "Limburg(Lahn)" "3" ref
 
 refJSON :: ByteString
 refJSON = fromStrict $ encodeUtf8 [text|
@@ -69,7 +70,7 @@ stopCoordinate :: Coordinate
 stopCoordinate = fromJust $ (<°>) 50.107149 8.663785
 
 stopLocation :: StopLocation
-stopLocation = StopLocation (StopId 008000105) "Frankfurt(Main)Hbf" stopCoordinate
+stopLocation = StopLocation (StopId "008000105") "Frankfurt(Main)Hbf" stopCoordinate
 
 unitTests = testGroup "Parsing"
 
@@ -78,6 +79,10 @@ unitTests = testGroup "Parsing"
       Right ref @=? (eitherDecode refJSON :: Either String JourneyRef)
   , testCase "parse Departure" $
       Right departure @=? (eitherDecode departureJSON :: Either String Connection)
+  , testCase "serialize connection" $ do
+      let encoded = encode departure
+          decoded = eitherDecode encoded :: Either String Connection
+      Right departure @=? decoded
   , testCase "parse StopLocation" $
       Right stopLocation @=? (eitherDecode stopLocationJSON :: Either String StopLocation)
   ]

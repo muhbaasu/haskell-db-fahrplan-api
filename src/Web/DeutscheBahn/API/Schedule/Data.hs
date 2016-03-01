@@ -9,11 +9,11 @@ import           Data.Maybe                     (fromJust)
 import           Data.Text                      (Text, unpack)
 import           Data.Time.Calendar             (Day)
 import           Data.Time.LocalTime            (LocalTime(..), TimeOfDay, TimeZone, hoursToTimeZone, localTimeToUTC)
-import           Data.Time.Format               (defaultTimeLocale, parseTimeOrError)
+import           Data.Time.Format               (defaultTimeLocale, formatTime, parseTimeOrError)
 import           GHC.Generics                   (Generic)
 
-newtype RouteIndex = RouteIndex {unRouteIndex :: Int} deriving (Eq, Show, Ord, Generic, ToJSON, FromJSON)
-newtype StopId     = StopId     {unStopId     :: Int} deriving (Eq, Show, Ord, Generic, ToJSON, FromJSON)
+newtype RouteIndex = RouteIndex {unRouteIndex :: Int} deriving (Eq, Show, Generic, ToJSON, FromJSON)
+newtype StopId     = StopId     {unStopId     :: Text} deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 -- | parse time formatted as e.g. 15:02
 parseApiTime :: Text -> TimeOfDay
@@ -22,6 +22,14 @@ parseApiTime str = parseTimeOrError False defaultTimeLocale "%H:%M" (unpack str)
 -- | parse time formatted as e.g. 2016-02-22
 parseApiDate :: Text -> Day
 parseApiDate str = parseTimeOrError False defaultTimeLocale "%Y-%m-%d" (unpack str)
+
+-- | format time to e.g. 15:02
+formatApiTime :: LocalTime -> String
+formatApiTime t = formatTime defaultTimeLocale "%H:%M" t
+
+-- | format date to e.g. 2016-02-22
+formatApiDate :: LocalTime -> String
+formatApiDate d = formatTime defaultTimeLocale "%Y-%m-%d" d
 
 data StopLocation = StopLocation
   { _stopLocationId           :: StopId
@@ -32,7 +40,7 @@ data StopLocation = StopLocation
 
 instance FromJSON StopLocation where
   parseJSON (Object v) = StopLocation <$>
-                          (StopId . read <$> v .: "id") <*>
+                          (StopId <$> v .: "id") <*>
                           v .: "name" <*>
                           (fromJust <$> ((<°>) <$>
                              (read <$> v .: "lat") <*>
@@ -54,11 +62,11 @@ instance FromJSON TransportType where
   parseJSON (String "S")   =  return SBahn
 
 instance ToJSON TransportType where
-  toJSON ICE   = object [ "value" .= String "ICE"]
-  toJSON IC    = object [ "value" .= String "IC"]
-  toJSON IRE   = object [ "value" .= String "IRE"]
-  toJSON RE    = object [ "value" .= String "RE"]
-  toJSON SBahn = object [ "value" .= String "S"]
+  toJSON ICE   = "ICE"
+  toJSON IC    = "IC"
+  toJSON IRE   = "IRE"
+  toJSON RE    = "RE"
+  toJSON SBahn = "S"
 
 -- | DepartureOrArrival
 data Connection = Connection
@@ -77,7 +85,7 @@ instance FromJSON Connection where
   parseJSON (Object v) = Connection <$>
                           v .: "name" <*>
                           v .: "type" <*>
-                          (StopId . read <$> v .: "stopid") <*> -- API sends Int as String
+                          (StopId  <$> v .: "stopid") <*> -- API sends Int as String
                           (LocalTime <$>
                              (parseApiDate <$> v .: "date") <*>
                              (parseApiTime <$> v .: "time")) <*>
@@ -86,12 +94,26 @@ instance FromJSON Connection where
                           v .: "track" <*>
                           v .: "JourneyDetailRef"
 
+instance ToJSON Connection where
+  toJSON a = object [ "name"             .= _connectionName a
+                    , "type"             .= _connectionTransportType a
+                    , "stopid"           .= (unStopId . _connectionStopId) a
+                    , "date"             .= (formatApiDate . _connectionDateTime) a
+                    , "time"             .= (formatApiTime . _connectionDateTime) a
+                    , "stop"             .= _connectionStop a
+                    , "direction"        .= _connectionDirection a
+                    , "track"            .= _connectionTrack a
+                    , "JourneyDetailRef" .= _connectionJourneyRef a]
+
 data JourneyRef = JourneyRef
   { _journeyRef :: Text
   } deriving (Show, Eq)
 
 instance FromJSON JourneyRef where
   parseJSON (Object v) = JourneyRef <$> v .: "ref"
+
+instance ToJSON JourneyRef where
+  toJSON a = object [ "ref" .= _journeyRef a]
 
 data Journey = Journey
   { _journeyStops     :: [Stop]
@@ -116,7 +138,7 @@ data Stop = Stop
   , _stopCoordinate    :: Coordinate
   , _stopRouteIndex    :: RouteIndex
   -- | combination of date and time
-  , _stopDepartureTime ::LocalTime
+  , _stopDepartureTime :: LocalTime
   , _stopTrack         :: Text
   } deriving Show
 
@@ -125,7 +147,7 @@ instance FromJSON Stop where
                          v .: "stop" <*>
                          v .: "name" <*>
                          (fromJust <$> ((<°>) <$> (v .: "lat") <*> (v .: "lon"))) <*>
-                         (RouteIndex <$>  v .: "routeIdx") <*>
+                         v .: "routeIdx" <*>
                          (LocalTime <$>
                             (parseApiDate <$> v .: "depDate") <*>
                             (parseApiTime <$> v .: "depTime")) <*>
@@ -137,8 +159,8 @@ instance ToJSON Stop where
                     , "lat"  .= _stopName a --  (show . latitudeMinutes ._stopCoordinate) a
                     , "lon"  .= _stopName a --  (show . longitudeMinutes . _stopCoordinate)  a
                     , "routeIdx" .= _stopRouteIndex a
-                    , "depTime" .= (show . _stopDepartureTime) a
-                    , "depDate" .= (show . _stopDepartureTime) a
+                    , "depTime" .= (formatApiTime . _stopDepartureTime) a
+                    , "depDate" .= (formatApiDate . _stopDepartureTime) a
                     , "track"   .= _stopTrack a
                     ]
 
