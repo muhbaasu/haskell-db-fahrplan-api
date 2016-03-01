@@ -142,12 +142,25 @@ instance Arbitrary Stop where
     track      <- arbitrary
     return $ Stop id name coordinate routeIndex time track
 
+instance Arbitrary StopLocation where
+  arbitrary = do
+    id    <- arbitrary
+    name  <- arbitrary
+    coord <- arbitrary
+    return $ StopLocation id name coord
+
+-- | Encode and Decode JSON and check whether the results match
+encDec :: (FromJSON a, ToJSON a, Eq a) => a -> Bool
+encDec a = Right a == eitherDecode (encode a)
+
 quickCheckTests = testGroup "Parsing and Serialization"
   [ QC.testProperty "serialize/deserialize connection" $
-      \connection ->
-        Right connection == ((eitherDecode (encode (connection :: Connection))) :: Either String Connection)
+    \connection -> encDec (connection::Connection)
   , QC.testProperty "serialize/deserialize stop" $
-      \stop ->
-        Right stop == ((eitherDecode (encode (stop :: Stop))) :: Either String Stop)
+    \stop -> encDec (stop::Stop)
+  , QC.testProperty "serialize/deserialize stopLocation" $
+    \stopLocation -> encDec (stopLocation::StopLocation)
+  , QC.testProperty "serialize/deserialize transportType" $
+    \transport -> encDec (transport::TransportType)
   ]
 

@@ -51,6 +51,13 @@ instance FromJSON StopLocation where
                              (read <$> v .: "lat") <*>
                              (read <$> v .: "lon"))
 
+instance ToJSON StopLocation where
+  toJSON a = object [ "id"   .= _stopLocationId a
+                    , "name" .= _stopLocationName a
+                    , "lat"  .= (show . _latitude . _stopLocationCoordinate) a
+                    , "lon"  .= (show ._longitude . _stopLocationCoordinate) a
+                    ]
+
 data TransportType =
     ICE
   | IC
