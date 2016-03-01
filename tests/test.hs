@@ -1,18 +1,18 @@
 {-# LANGUAGE QuasiQuotes, OverloadedStrings #-}
 
 import Data.Aeson
-import Data.ByteString.Lazy
-import Data.Geo.Coordinate.Coordinate      ((<°>), Coordinate)
+import Data.ByteString.Lazy                (ByteString, fromStrict)
 import Data.Maybe                          (fromJust)
-import Data.Text                           (Text)
+import Data.Text                           (Text, pack)
 import Data.Text.Encoding                  (encodeUtf8)
+import Data.Time.Calendar                  (Day(..))
 import Data.Time.Clock                     (UTCTime)
 import Data.Time.ISO8601                   (parseISO8601)
-import Data.Time.LocalTime                 (LocalTime, TimeZone, hoursToTimeZone, utcToLocalTime)
+import Data.Time.LocalTime                 (LocalTime(..), TimeZone, TimeOfDay(..), hoursToTimeZone, utcToLocalTime)
 import NeatInterpolation
 import Test.Tasty
 import Test.Tasty.HUnit
-import Test.Tasty.QuickCheck as QC
+import Test.Tasty.QuickCheck               as QC
 
 import Web.DeutscheBahn.API.Schedule
 import Web.DeutscheBahn.API.Schedule.Data
@@ -67,8 +67,8 @@ stopLocationJSON = fromStrict $ encodeUtf8 [text|
  "id":"008000105"
 }|]
 
-stopCoordinate :: Coordinate
-stopCoordinate = fromJust $ (<°>) 50.107149 8.663785
+stopCoordinate :: StopCoordinate
+stopCoordinate = StopCoordinate 50.107149 8.663785
 
 stopLocation :: StopLocation
 stopLocation = StopLocation (StopId "008000105") "Frankfurt(Main)Hbf" stopCoordinate
@@ -80,29 +80,74 @@ unitTests = testGroup "Parsing"
       Right ref @=? (eitherDecode refJSON :: Either String JourneyRef)
   , testCase "parse Departure" $
       Right departure @=? (eitherDecode departureJSON :: Either String Connection)
-  , testCase "serialize connection" $ do
-      let encoded = encode departure
-          decoded = eitherDecode encoded :: Either String Connection
-      Right departure @=? decoded
   , testCase "parse StopLocation" $
       Right stopLocation @=? (eitherDecode stopLocationJSON :: Either String StopLocation)
   ]
 
+instance Arbitrary Text where
+  arbitrary = pack <$> arbitrary
+
+ -- | Seconds always zero
+instance Arbitrary TimeOfDay where
+  arbitrary = do
+    h <- choose (0, 23)
+    m <- choose (0, 59)
+    return $ TimeOfDay h m 0
+
+instance Arbitrary Day where
+  arbitrary = ModifiedJulianDay <$> arbitrary
+
+instance Arbitrary LocalTime where
+  arbitrary = LocalTime <$> arbitrary <*> arbitrary
+
+instance Arbitrary RouteIndex where
+  arbitrary = RouteIndex <$> arbitrary
+
+instance Arbitrary StopCoordinate where
+    arbitrary = do
+      lat <- choose (-90.0, 90.0)
+      lon <- choose (-180.0, 180.0)
+      return $ StopCoordinate lat lon
+
+-- Custom instances
+
+instance Arbitrary TransportType where
+  arbitrary = elements [ICE, IC, IRE, RE, SBahn]
+
+instance Arbitrary JourneyRef where
+  arbitrary = JourneyRef <$> arbitrary
+
+instance Arbitrary StopId where
+  arbitrary = StopId <$> arbitrary
+
 instance Arbitrary Connection where
   arbitrary = do
-    name <- arbitrary
+    name          <- arbitrary
     transportType <- arbitrary
-    stopId <- arbitrary
-    time <- arbitrary
-    stop <- arbitrary
-    dir <- arbitrary
-    track <- arbitrary
-    ref <- arbitrary
-    return Connection name transportType stopId time stop dir track ref
+    stopId        <- arbitrary
+    time          <- arbitrary
+    stop          <- arbitrary
+    dir           <- arbitrary
+    track         <- arbitrary
+    ref           <- arbitrary
+    return $ Connection name transportType stopId time stop dir track ref
+
+instance Arbitrary Stop where
+  arbitrary = do
+    id         <- arbitrary
+    name       <- arbitrary
+    coordinate <- arbitrary
+    routeIndex <- arbitrary
+    time       <- arbitrary
+    track      <- arbitrary
+    return $ Stop id name coordinate routeIndex time track
 
 quickCheckTests = testGroup "Parsing and Serialization"
   [ QC.testProperty "serialize/deserialize connection" $
       \connection ->
         Right connection == ((eitherDecode (encode (connection :: Connection))) :: Either String Connection)
+  , QC.testProperty "serialize/deserialize stop" $
+      \stop ->
+        Right stop == ((eitherDecode (encode (stop :: Stop))) :: Either String Stop)
   ]
 

@@ -22,7 +22,7 @@ library
   -- other-extensions:
   build-depends:       aeson        >=0.9
                      , base         >=4.8 && <4.9
-                     , coordinate   >=0.0.19
+                     , lens         >=4.13
                      , text         >=1.2
                      , time         >=1.5
   hs-source-dirs:      src
@@ -33,16 +33,15 @@ test-suite test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      tests
   main-is:             test.hs
-  build-depends:       aeson              >=0.9
-                     , base               >=4 && <5
-                     , bytestring         >=0.10
-                     , coordinate         >=0.0.19
-                     , iso8601-time       >=0.1
-                     , tasty              >=0.11
-                     , tasty-hunit        >=0.9
-                     , tasty-quickcheck   >=0.8
-                     , neat-interpolation >=0.3
-                     , text               >=1.2
-                     , time               >=1.5
+  build-depends:       aeson                >=0.9
+                     , base                 >=4 && <5
+                     , bytestring           >=0.10
+                     , iso8601-time         >=0.1
+                     , tasty                >=0.11
+                     , tasty-hunit          >=0.9
+                     , tasty-quickcheck     >=0.8
+                     , neat-interpolation   >=0.3
+                     , text                 >=1.2
+                     , time                 >=1.5
                      , haskell-db-fahrplan-api
 

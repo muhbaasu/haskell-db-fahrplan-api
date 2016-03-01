@@ -3,8 +3,8 @@
 -- | Type definitions for the Fahrplan API
 module Web.DeutscheBahn.API.Schedule.Data where
 
+import           Control.Lens.Getter            (view)
 import           Data.Aeson
-import           Data.Geo.Coordinate.Coordinate ((<°>), Coordinate, longitudeMinutes, latitudeMinutes)
 import           Data.Maybe                     (fromJust)
 import           Data.Text                      (Text, unpack)
 import           Data.Time.Calendar             (Day)
@@ -31,20 +31,25 @@ formatApiTime t = formatTime defaultTimeLocale "%H:%M" t
 formatApiDate :: LocalTime -> String
 formatApiDate d = formatTime defaultTimeLocale "%Y-%m-%d" d
 
+data StopCoordinate = StopCoordinate
+  { _latitude :: Double
+  , _longitude :: Double
+  } deriving (Show, Eq)
+
 data StopLocation = StopLocation
   { _stopLocationId           :: StopId
   , _stopLocationName         :: Text
   -- | combination of Latitude, Longitude
-  , _stopLocationCoordinate   :: Coordinate
+  , _stopLocationCoordinate   :: StopCoordinate
   } deriving (Show, Eq)
 
 instance FromJSON StopLocation where
   parseJSON (Object v) = StopLocation <$>
                           (StopId <$> v .: "id") <*>
                           v .: "name" <*>
-                          (fromJust <$> ((<°>) <$>
+                          (StopCoordinate <$>
                              (read <$> v .: "lat") <*>
-                             (read <$> v .: "lon")))
+                             (read <$> v .: "lon"))
 
 data TransportType =
     ICE
@@ -135,18 +140,18 @@ data Stop = Stop
   { _stopId            :: StopId
   , _stopName          :: Text
   -- | combination of Latitude, Longitude
-  , _stopCoordinate    :: Coordinate
+  , _stopCoordinate    :: StopCoordinate
   , _stopRouteIndex    :: RouteIndex
   -- | combination of date and time
   , _stopDepartureTime :: LocalTime
   , _stopTrack         :: Text
-  } deriving Show
+  } deriving (Show, Eq)
 
 instance FromJSON Stop where
   parseJSON (Object v) = Stop <$>
                          v .: "stop" <*>
                          v .: "name" <*>
-                         (fromJust <$> ((<°>) <$> (v .: "lat") <*> (v .: "lon"))) <*>
+                         (StopCoordinate <$> (v .: "lat") <*> (v .: "lon")) <*>
                          v .: "routeIdx" <*>
                          (LocalTime <$>
                             (parseApiDate <$> v .: "depDate") <*>
@@ -156,8 +161,8 @@ instance FromJSON Stop where
 instance ToJSON Stop where
   toJSON a = object [ "stop" .= _stopId a
                     , "name" .= _stopName a
-                    , "lat"  .= _stopName a --  (show . latitudeMinutes ._stopCoordinate) a
-                    , "lon"  .= _stopName a --  (show . longitudeMinutes . _stopCoordinate)  a
+                    , "lat"  .= (_latitude . _stopCoordinate) a
+                    , "lon"  .= (_longitude . _stopCoordinate) a
                     , "routeIdx" .= _stopRouteIndex a
                     , "depTime" .= (formatApiTime . _stopDepartureTime) a
                     , "depDate" .= (formatApiDate . _stopDepartureTime) a
