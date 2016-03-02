@@ -32,6 +32,38 @@ formatApiTime t = formatTime defaultTimeLocale "%H:%M" t
 formatApiDate :: LocalTime -> String
 formatApiDate d = formatTime defaultTimeLocale "%Y-%m-%d" d
 
+data LocationList = LocationList
+  { _stopLocation  :: [StopLocation]
+  , _coordLocation :: [CoordLocation]
+  } deriving (Show, Eq, Generic)
+
+instance FromJSON LocationList where
+  parseJSON (Object v) = LocationList <$>
+                          v .: "StopLocation" <*>
+                          v .: "CoordLocation"
+
+
+data CoordLocation = CoordLocation
+  { _coordLocationName       :: Text
+  , _coordLocationType                    :: Text
+  , _coordLocationCoordinate :: StopCoordinate
+  } deriving (Show, Eq)
+
+instance FromJSON CoordLocation where
+  parseJSON (Object v) = CoordLocation <$>
+                          v .: "name" <*>
+                          v .: "type" <*>
+                          (StopCoordinate <$>
+                             (read <$> v .: "lat") <*>
+                             (read <$> v .: "lon"))
+
+instance ToJSON CoordLocation where
+  toJSON a = object [ "name"  .= _coordLocationName a
+                    , "type" .= _coordLocationType a
+                    , "lat"  .= (show . _latitude . _coordLocationCoordinate) a
+                    , "lon"  .= (show . _longitude . _coordLocationCoordinate) a
+                    ]
+
 data StopCoordinate = StopCoordinate
   { _latitude :: Double
   , _longitude :: Double
@@ -57,7 +89,7 @@ instance ToJSON StopLocation where
   toJSON a = object [ "id"   .= _stopLocationId a
                     , "name" .= _stopLocationName a
                     , "lat"  .= (show . _latitude . _stopLocationCoordinate) a
-                    , "lon"  .= (show ._longitude . _stopLocationCoordinate) a
+                    , "lon"  .= (show . _longitude . _stopLocationCoordinate) a
                     ]
 
 data TransportType =
