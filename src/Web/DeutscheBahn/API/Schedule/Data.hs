@@ -7,14 +7,18 @@ import           Control.Lens.Getter            (view)
 import           Data.Aeson
 import           Data.Aeson.Types               (typeMismatch)
 import           Data.Maybe                     (fromJust)
-import           Data.Text                      (Text, unpack)
+import           Data.Text                      (Text, unpack, pack)
 import           Data.Time.Calendar             (Day)
 import           Data.Time.LocalTime            (LocalTime(..), TimeOfDay, TimeZone, hoursToTimeZone, localTimeToUTC)
-import           Data.Time.Format               (defaultTimeLocale, formatTime, parseTimeOrError)
+import           Data.Time.Format               (FormatTime, defaultTimeLocale, formatTime, parseTimeOrError)
 import           GHC.Generics                   (Generic)
+import           Servant.API                    (ToText(..))
 
 newtype RouteIndex = RouteIndex {unRouteIndex :: Int} deriving (Eq, Show, Generic, ToJSON, FromJSON)
 newtype StopId     = StopId     {unStopId     :: Text} deriving (Eq, Show, Generic, ToJSON, FromJSON)
+
+instance ToText StopId where
+  toText s = unStopId s
 
 -- | parse time formatted as e.g. 15:02
 parseApiTime :: Text -> TimeOfDay
@@ -25,12 +29,18 @@ parseApiDate :: Text -> Day
 parseApiDate str = parseTimeOrError False defaultTimeLocale "%Y-%m-%d" (unpack str)
 
 -- | format time to e.g. 15:02
-formatApiTime :: LocalTime -> String
+formatApiTime :: FormatTime t => t -> String
 formatApiTime t = formatTime defaultTimeLocale "%H:%M" t
 
 -- | format date to e.g. 2016-02-22
-formatApiDate :: LocalTime -> String
-formatApiDate d = formatTime defaultTimeLocale "%Y-%m-%d" d
+formatApiDate :: FormatTime t => t -> String
+formatApiDate t = formatTime defaultTimeLocale "%Y-%m-%d" t
+
+instance ToText TimeOfDay where
+  toText t = pack $ formatApiTime t
+
+instance ToText Day where
+  toText d = pack $ formatApiDate d
 
 data LocationList = LocationList
   { _stopLocation  :: [StopLocation]
