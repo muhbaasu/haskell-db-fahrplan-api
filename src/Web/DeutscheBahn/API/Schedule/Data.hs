@@ -45,7 +45,7 @@ instance FromJSON LocationList where
 
 data CoordLocation = CoordLocation
   { _coordLocationName       :: Text
-  , _coordLocationType                    :: Text
+  , _coordLocationType       :: Text
   , _coordLocationCoordinate :: Coordinate
   } deriving (Show, Eq)
 

@@ -132,6 +132,13 @@ instance Arbitrary Connection where
     ref           <- arbitrary
     return $ Connection name transportType stopId time stop dir track ref
 
+instance Arbitrary CoordLocation where
+  arbitrary = do
+    name    <- arbitrary
+    locType <- arbitrary
+    coord   <- arbitrary
+    return $ CoordLocation name locType coord
+
 instance Arbitrary Journey where
   arbitrary = do
     stops     <- arbitrary
@@ -194,6 +201,8 @@ encDec a = Right a == eitherDecode (encode a)
 quickCheckTests = testGroup "Parsing and Serialization"
   [ QC.testProperty "serialize/deserialize connection" $
     \connection -> encDec (connection::Connection)
+  , QC.testProperty "serialize/deserialize coordLocation" $
+    \coordLocation -> encDec (coordLocation::CoordLocation)
   , QC.testProperty "serialize/deserialize journey" $
     \journey -> encDec (journey::Journey)
   , QC.testProperty "serialize/deserialize journeyRef" $
