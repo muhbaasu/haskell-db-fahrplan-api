@@ -46,14 +46,14 @@ instance FromJSON LocationList where
 data CoordLocation = CoordLocation
   { _coordLocationName       :: Text
   , _coordLocationType                    :: Text
-  , _coordLocationCoordinate :: StopCoordinate
+  , _coordLocationCoordinate :: Coordinate
   } deriving (Show, Eq)
 
 instance FromJSON CoordLocation where
   parseJSON (Object v) = CoordLocation <$>
                           v .: "name" <*>
                           v .: "type" <*>
-                          (StopCoordinate <$>
+                          (Coordinate <$>
                              (read <$> v .: "lat") <*>
                              (read <$> v .: "lon"))
 
@@ -64,7 +64,7 @@ instance ToJSON CoordLocation where
                     , "lon"  .= (show . _longitude . _coordLocationCoordinate) a
                     ]
 
-data StopCoordinate = StopCoordinate
+data Coordinate = Coordinate
   { _latitude :: Double
   , _longitude :: Double
   } deriving (Show, Eq)
@@ -73,14 +73,14 @@ data StopLocation = StopLocation
   { _stopLocationId           :: StopId
   , _stopLocationName         :: Text
   -- | combination of Latitude, Longitude
-  , _stopLocationCoordinate   :: StopCoordinate
+  , _stopLocationCoordinate   :: Coordinate
   } deriving (Show, Eq)
 
 instance FromJSON StopLocation where
   parseJSON (Object v) = StopLocation <$>
                           (StopId <$> v .: "id") <*>
                           v .: "name" <*>
-                          (StopCoordinate <$>
+                          (Coordinate <$>
                              (read <$> v .: "lat") <*>
                              (read <$> v .: "lon"))
   parseJSON invalid    = typeMismatch "StopLocation" invalid
@@ -192,7 +192,7 @@ data Stop = Stop
   { _stopId            :: StopId
   , _stopName          :: Text
   -- | combination of Latitude, Longitude
-  , _stopCoordinate    :: StopCoordinate
+  , _stopCoordinate    :: Coordinate
   , _stopRouteIndex    :: RouteIndex
   -- | combination of date and time
   , _stopDepartureTime :: LocalTime
@@ -203,7 +203,7 @@ instance FromJSON Stop where
   parseJSON (Object v) = Stop <$>
                          v .: "stop" <*>
                          v .: "name" <*>
-                         (StopCoordinate <$> (v .: "lat") <*> (v .: "lon")) <*>
+                         (Coordinate <$> (v .: "lat") <*> (v .: "lon")) <*>
                          v .: "routeIdx" <*>
                          (LocalTime <$>
                             (parseApiDate <$> v .: "depDate") <*>

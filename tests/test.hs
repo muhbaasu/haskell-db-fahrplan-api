@@ -67,8 +67,8 @@ stopLocationJSON = fromStrict $ encodeUtf8 [text|
  "id":"008000105"
 }|]
 
-stopCoordinate :: StopCoordinate
-stopCoordinate = StopCoordinate 50.107149 8.663785
+stopCoordinate :: Coordinate
+stopCoordinate = Coordinate 50.107149 8.663785
 
 stopLocation :: StopLocation
 stopLocation = StopLocation (StopId "008000105") "Frankfurt(Main)Hbf" stopCoordinate
@@ -103,11 +103,11 @@ instance Arbitrary LocalTime where
 instance Arbitrary RouteIndex where
   arbitrary = RouteIndex <$> arbitrary
 
-instance Arbitrary StopCoordinate where
+instance Arbitrary Coordinate where
     arbitrary = do
       lat <- choose (-90.0, 90.0)
       lon <- choose (-180.0, 180.0)
-      return $ StopCoordinate lat lon
+      return $ Coordinate lat lon
 
 -- Custom instances
 
