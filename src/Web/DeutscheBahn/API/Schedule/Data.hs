@@ -5,6 +5,7 @@ module Web.DeutscheBahn.API.Schedule.Data where
 
 import           Control.Lens.Getter            (view)
 import           Data.Aeson
+import           Data.Aeson.Types               (typeMismatch)
 import           Data.Maybe                     (fromJust)
 import           Data.Text                      (Text, unpack)
 import           Data.Time.Calendar             (Day)
@@ -50,6 +51,7 @@ instance FromJSON StopLocation where
                           (StopCoordinate <$>
                              (read <$> v .: "lat") <*>
                              (read <$> v .: "lon"))
+  parseJSON invalid    = typeMismatch "StopLocation" invalid
 
 instance ToJSON StopLocation where
   toJSON a = object [ "id"   .= _stopLocationId a
@@ -67,11 +69,12 @@ data TransportType =
   deriving (Show, Eq)
 
 instance FromJSON TransportType where
-  parseJSON (String "ICE") =  return ICE
-  parseJSON (String "IC")  =  return IC
-  parseJSON (String "IRE") =  return IRE
-  parseJSON (String "RE")  =  return RE
-  parseJSON (String "S")   =  return SBahn
+  parseJSON (String "ICE") = return ICE
+  parseJSON (String "IC")  = return IC
+  parseJSON (String "IRE") = return IRE
+  parseJSON (String "RE")  = return RE
+  parseJSON (String "S")   = return SBahn
+  parseJSON invalid        = typeMismatch "TransportType" invalid
 
 instance ToJSON TransportType where
   toJSON ICE   = "ICE"
@@ -105,6 +108,7 @@ instance FromJSON Connection where
                           v .: "direction" <*>
                           v .: "track" <*>
                           v .: "JourneyDetailRef"
+  parseJSON invalid    = typeMismatch "Connection" invalid
 
 instance ToJSON Connection where
   toJSON a = object [ "name"             .= _connectionName a
@@ -123,6 +127,7 @@ data JourneyRef = JourneyRef
 
 instance FromJSON JourneyRef where
   parseJSON (Object v) = JourneyRef <$> v .: "ref"
+  parseJSON invalid    = typeMismatch "JourneyRef" invalid
 
 instance ToJSON JourneyRef where
   toJSON a = object [ "ref" .= _journeyRef a]
@@ -142,6 +147,7 @@ instance FromJSON Journey where
                           v .: "types" <*>
                           v .: "operators" <*>
                           v .: "notes"
+  parseJSON invalid    = typeMismatch "Journey" invalid
 
 data Stop = Stop
   { _stopId            :: StopId
@@ -164,6 +170,7 @@ instance FromJSON Stop where
                             (parseApiDate <$> v .: "depDate") <*>
                             (parseApiTime <$> v .: "depTime")) <*>
                          v .: "track"
+  parseJSON invalid    = typeMismatch "Stop" invalid
 
 instance ToJSON Stop where
   toJSON a = object [ "stop" .= _stopId a
@@ -187,6 +194,7 @@ instance FromJSON Name where
                          v .: "name" <*>
                          (RouteIndex <$>  v .: "routeIdxFrom") <*>
                          (RouteIndex <$>  v .: "routeIdxTo")
+  parseJSON invalid    = typeMismatch "Name" invalid
 
 instance ToJSON Name where
   toJSON a = object [ "name"         .= _nameName a
@@ -205,6 +213,7 @@ instance FromJSON JourneyType where
                          v .: "type" <*>
                          (RouteIndex <$>  v .: "routeIdxFrom") <*>
                          (RouteIndex <$>  v .: "routeIdxTo")
+  parseJSON invalid    = typeMismatch "JourneyType" invalid
 
 instance ToJSON JourneyType where
   toJSON a = object [ "name"         .= _journeyTypeTransportType a
@@ -222,6 +231,7 @@ instance FromJSON Operator where
                          v .: "name" <*>
                          (RouteIndex <$> v .: "routeIdxFrom") <*>
                          (RouteIndex <$> v .: "routeIdxTo")
+  parseJSON invalid    = typeMismatch "Operator" invalid
 
 instance ToJSON Operator where
   toJSON a = object [ "name"         .= _operatorName a
@@ -241,6 +251,7 @@ instance FromJSON Note where
                          v .: "priority" <*>
                          (RouteIndex <$> v .: "routeIdxFrom") <*>
                          (RouteIndex <$> v .: "routeIdxTo")
+  parseJSON invalid    = typeMismatch "Note" invalid
 
 instance ToJSON Note where
   toJSON a = object [ "key"          .= _noteKey a
