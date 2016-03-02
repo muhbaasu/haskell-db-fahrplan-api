@@ -132,6 +132,44 @@ instance Arbitrary Connection where
     ref           <- arbitrary
     return $ Connection name transportType stopId time stop dir track ref
 
+instance Arbitrary Journey where
+  arbitrary = do
+    stops     <- arbitrary
+    names     <- arbitrary
+    types     <- arbitrary
+    operators <- arbitrary
+    notes     <- arbitrary
+    return $ Journey stops names types operators notes
+
+instance Arbitrary JourneyType where
+  arbitrary = do
+    transportType <- arbitrary
+    routeIdxFrom  <- arbitrary
+    routeIdxTo    <- arbitrary
+    return $ JourneyType transportType routeIdxFrom routeIdxTo
+
+instance Arbitrary Operator where
+  arbitrary = do
+    name          <- arbitrary
+    routeIdxFrom  <- arbitrary
+    routeIdxTo    <- arbitrary
+    return $ Operator name routeIdxFrom routeIdxTo
+
+instance Arbitrary Name where
+  arbitrary = do
+    name         <- arbitrary
+    routeIdxFrom <- arbitrary
+    routeIdxTo   <- arbitrary
+    return $ Name name routeIdxFrom routeIdxTo
+
+instance Arbitrary Note where
+  arbitrary = do
+    key          <- arbitrary
+    priority     <- arbitrary
+    routeIdxFrom <- arbitrary
+    routeIdxTo   <- arbitrary
+    return $ Note key priority routeIdxFrom routeIdxTo
+
 instance Arbitrary Stop where
   arbitrary = do
     id         <- arbitrary
@@ -156,6 +194,16 @@ encDec a = Right a == eitherDecode (encode a)
 quickCheckTests = testGroup "Parsing and Serialization"
   [ QC.testProperty "serialize/deserialize connection" $
     \connection -> encDec (connection::Connection)
+  , QC.testProperty "serialize/deserialize journey" $
+    \journey -> encDec (journey::Journey)
+  , QC.testProperty "serialize/deserialize journeyRef" $
+    \journeyRef -> encDec (journeyRef::JourneyRef)
+  , QC.testProperty "serialize/deserialize journeyType" $
+    \journeyType -> encDec (journeyType::JourneyType)
+  , QC.testProperty "serialize/deserialie note" $
+    \note -> encDec (note::Note)
+  , QC.testProperty "serialize/deserialize operator" $
+    \operator -> encDec (operator::Operator)
   , QC.testProperty "serialize/deserialize stop" $
     \stop -> encDec (stop::Stop)
   , QC.testProperty "serialize/deserialize stopLocation" $

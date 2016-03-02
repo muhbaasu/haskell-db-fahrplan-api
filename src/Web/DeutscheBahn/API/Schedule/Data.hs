@@ -138,16 +138,23 @@ data Journey = Journey
   , _journeyTypes     :: [JourneyType]
   , _journeyOperators :: [Operator]
   , _journeyNotes     :: [Note]
-  } deriving Show
+  } deriving (Show, Eq)
 
 instance FromJSON Journey where
   parseJSON (Object v) = Journey <$>
-                          v .: "stops" <*>
-                          v .: "names" <*>
-                          v .: "types" <*>
-                          v .: "operators" <*>
-                          v .: "notes"
+                          ((v .: "stops")     >>= (.: "stop")) <*>
+                          ((v .: "names")     >>= (.: "name")) <*>
+                          ((v .: "types")     >>= (.: "type")) <*>
+                          ((v .: "operators") >>= (.: "operator")) <*>
+                          ((v .: "notes")     >>= (.: "note"))
   parseJSON invalid    = typeMismatch "Journey" invalid
+
+instance ToJSON Journey where
+  toJSON a = object [ "stops"     .= (object ["stop"     .= toJSON (_journeyStops a)])
+                    , "names"     .= (object ["name"     .= toJSON (_journeyNames a)])
+                    , "types"     .= (object ["type"     .= toJSON (_journeyTypes a)])
+                    , "operators" .= (object ["operator" .= toJSON (_journeyOperators a)])
+                    , "notes"     .= (object ["note"     .= toJSON (_journeyNotes a)])]
 
 data Stop = Stop
   { _stopId            :: StopId
@@ -187,7 +194,7 @@ data Name = Name
   { _nameName           :: Text
   , _nameRouteIndexFrom :: RouteIndex
   , _nameRouteIndexTo   :: RouteIndex
-  } deriving Show
+  } deriving (Show, Eq)
 
 instance FromJSON Name where
   parseJSON (Object v) = Name <$>
@@ -206,17 +213,17 @@ data JourneyType = JourneyType
   { _journeyTypeTransportType  :: TransportType
   , _journeyTypeRouteIndexFrom :: RouteIndex
   , _journeyTypeRouteIndexTo   :: RouteIndex
-  } deriving Show
+  } deriving (Show, Eq)
 
 instance FromJSON JourneyType where
   parseJSON (Object v) = JourneyType <$>
                          v .: "type" <*>
-                         (RouteIndex <$>  v .: "routeIdxFrom") <*>
-                         (RouteIndex <$>  v .: "routeIdxTo")
+                         (RouteIndex <$> v .: "routeIdxFrom") <*>
+                         (RouteIndex <$> v .: "routeIdxTo")
   parseJSON invalid    = typeMismatch "JourneyType" invalid
 
 instance ToJSON JourneyType where
-  toJSON a = object [ "name"         .= _journeyTypeTransportType a
+  toJSON a = object [ "type"         .= _journeyTypeTransportType a
                     , "routeIdxFrom" .= _journeyTypeRouteIndexFrom a
                     , "routeIdxTo"   .= _journeyTypeRouteIndexTo a]
 
@@ -224,7 +231,7 @@ data Operator = Operator
   { _operatorName :: Text
   , _operatorRouteIndexFrom :: RouteIndex
   , _operatorRouteIndexTo   :: RouteIndex
-  } deriving Show
+  } deriving (Show, Eq)
 
 instance FromJSON Operator where
   parseJSON (Object v) = Operator <$>
@@ -243,7 +250,7 @@ data Note = Note
   , _notePriority       :: Int
   , _noteRouteIndexFrom :: RouteIndex
   , _noteRouteIndexTo   :: RouteIndex
-  } deriving Show
+  } deriving (Show, Eq)
 
 instance FromJSON Note where
   parseJSON (Object v) = Note <$>
