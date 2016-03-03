@@ -44,35 +44,11 @@ instance ToText Day where
 
 data LocationList = LocationList
   { _stopLocation  :: [StopLocation]
-  , _coordLocation :: [CoordLocation]
   } deriving (Show, Eq, Generic)
 
 instance FromJSON LocationList where
   parseJSON (Object v) = LocationList <$>
-                          v .: "StopLocation" <*>
-                          v .: "CoordLocation"
-
-
-data CoordLocation = CoordLocation
-  { _coordLocationName       :: Text
-  , _coordLocationType       :: Text
-  , _coordLocationCoordinate :: Coordinate
-  } deriving (Show, Eq)
-
-instance FromJSON CoordLocation where
-  parseJSON (Object v) = CoordLocation <$>
-                          v .: "name" <*>
-                          v .: "type" <*>
-                          (Coordinate <$>
-                             (read <$> v .: "lat") <*>
-                             (read <$> v .: "lon"))
-
-instance ToJSON CoordLocation where
-  toJSON a = object [ "name"  .= _coordLocationName a
-                    , "type" .= _coordLocationType a
-                    , "lat"  .= (show . _latitude . _coordLocationCoordinate) a
-                    , "lon"  .= (show . _longitude . _coordLocationCoordinate) a
-                    ]
+                          v .: "StopLocation"
 
 data Coordinate = Coordinate
   { _latitude :: Double
