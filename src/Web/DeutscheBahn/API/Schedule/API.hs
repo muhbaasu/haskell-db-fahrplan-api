@@ -90,15 +90,15 @@ type DeutscheBahnAPI =
 api :: Proxy DeutscheBahnAPI
 api = Proxy
 
-locationName :: Maybe ApiLanguage ->AuthKey -> Text -> IO (Either ServantError LocationResponse)
-locationName l k i = runEitherT $ locationName_ format lang key input
+locationName :: Maybe ApiLanguage ->AuthKey -> Text -> IO (Either ServantError LocationList)
+locationName l k i = runEitherT $ _locationList <$> locationName_ format lang key input
   where format = Just FormatJSON
         lang   = Just $ fromMaybe English l
         key    = Just k
         input  = Just i
 
-departureBoard :: Maybe ApiLanguage -> AuthKey -> StopId -> Day -> TimeOfDay -> IO (Either ServantError DepartureBoardResponse)
-departureBoard l k s d t = runEitherT $ departureBoard_ format lang key stop day time
+departureBoard :: Maybe ApiLanguage -> AuthKey -> StopId -> Day -> TimeOfDay -> IO (Either ServantError [Departure])
+departureBoard l k s d t = runEitherT $ _departure <$>  departureBoard_ format lang key stop day time
   where format = Just FormatJSON
         lang   = Just $ fromMaybe English l
         key    = Just k
@@ -106,8 +106,8 @@ departureBoard l k s d t = runEitherT $ departureBoard_ format lang key stop day
         day    = Just d
         time   = Just t
 
-arrivalBoard :: Maybe ApiLanguage -> AuthKey -> StopId -> Day -> TimeOfDay -> IO (Either ServantError ArrivalBoardResponse)
-arrivalBoard l k s d t = runEitherT $ arrivalBoard_ format lang key stop day time
+arrivalBoard :: Maybe ApiLanguage -> AuthKey -> StopId -> Day -> TimeOfDay -> IO (Either ServantError [Arrival])
+arrivalBoard l k s d t = runEitherT $ _arrival <$> arrivalBoard_ format lang key stop day time
   where format = Just FormatJSON
         lang   = Just $ fromMaybe English l
         key    = Just k
