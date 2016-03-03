@@ -122,7 +122,7 @@ instance Arbitrary StopId where
 
 instance Arbitrary Arrival where
   arbitrary = do
-    name          <- arbitrary
+    depName       <- arbitrary
     transportType <- arbitrary
     stopId        <- arbitrary
     time          <- arbitrary
@@ -130,11 +130,11 @@ instance Arbitrary Arrival where
     origin        <- arbitrary
     track         <- arbitrary
     ref           <- arbitrary
-    return $ Arrival name transportType stopId time stop origin track ref
+    return $ Arrival depName transportType stopId time stop origin track ref
 
 instance Arbitrary Departure where
   arbitrary = do
-    name          <- arbitrary
+    depName       <- arbitrary
     transportType <- arbitrary
     stopId        <- arbitrary
     time          <- arbitrary
@@ -142,7 +142,7 @@ instance Arbitrary Departure where
     dir           <- arbitrary
     track         <- arbitrary
     ref           <- arbitrary
-    return $ Departure name transportType stopId time stop dir track ref
+    return $ Departure depName transportType stopId time stop dir track ref
 
 instance Arbitrary CoordLocation where
   arbitrary = do

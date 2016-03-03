@@ -18,7 +18,7 @@ newtype RouteIndex = RouteIndex {unRouteIndex :: Int} deriving (Eq, Show, Generi
 newtype StopId     = StopId     {unStopId     :: Text} deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 instance ToText StopId where
-  toText s = unStopId s
+  toText = unStopId
 
 -- | parse time formatted as e.g. 15:02
 parseApiTime :: Text -> TimeOfDay
@@ -30,11 +30,11 @@ parseApiDate str = parseTimeOrError False defaultTimeLocale "%Y-%m-%d" (unpack s
 
 -- | format time to e.g. 15:02
 formatApiTime :: FormatTime t => t -> String
-formatApiTime t = formatTime defaultTimeLocale "%H:%M" t
+formatApiTime = formatTime defaultTimeLocale "%H:%M"
 
 -- | format date to e.g. 2016-02-22
 formatApiDate :: FormatTime t => t -> String
-formatApiDate t = formatTime defaultTimeLocale "%Y-%m-%d" t
+formatApiDate = formatTime defaultTimeLocale "%Y-%m-%d"
 
 instance ToText TimeOfDay where
   toText t = pack $ formatApiTime t
@@ -215,11 +215,11 @@ instance FromJSON Journey where
   parseJSON invalid    = typeMismatch "Journey" invalid
 
 instance ToJSON Journey where
-  toJSON a = object [ "stops"     .= (object ["stop"     .= toJSON (_journeyStops a)])
-                    , "names"     .= (object ["name"     .= toJSON (_journeyNames a)])
-                    , "types"     .= (object ["type"     .= toJSON (_journeyTypes a)])
-                    , "operators" .= (object ["operator" .= toJSON (_journeyOperators a)])
-                    , "notes"     .= (object ["note"     .= toJSON (_journeyNotes a)])]
+  toJSON a = object [ "stops"     .= object ["stop"     .= toJSON (_journeyStops a)]
+                    , "names"     .= object ["name"     .= toJSON (_journeyNames a)]
+                    , "types"     .= object ["type"     .= toJSON (_journeyTypes a)]
+                    , "operators" .= object ["operator" .= toJSON (_journeyOperators a)]
+                    , "notes"     .= object ["note"     .= toJSON (_journeyNotes a)]]
 
 data Stop = Stop
   { _stopId            :: StopId

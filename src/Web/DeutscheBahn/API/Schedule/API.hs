@@ -1,5 +1,4 @@
 {-# LANGUAGE DataKinds         #-}
-{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE DeriveAnyClass    #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeOperators     #-}
@@ -61,7 +60,7 @@ instance FromJSON ArrivalBoardResponse where
 newtype AuthKey = AuthKey {_unAuthKey :: Text} deriving (Show, Eq)
 
 instance ToText AuthKey where
-  toText key = _unAuthKey key
+  toText = _unAuthKey
 
 type DeutscheBahnAPI =
   "bin/rest.exe/location.name"
@@ -91,29 +90,29 @@ api :: Proxy DeutscheBahnAPI
 api = Proxy
 
 locationName :: Maybe ApiLanguage ->AuthKey -> Text -> IO (Either ServantError LocationList)
-locationName l k i = runEitherT $ _locationList <$> locationName_ format lang key input
-  where format = Just FormatJSON
-        lang   = Just $ fromMaybe English l
-        key    = Just k
-        input  = Just i
+locationName l k i = runEitherT $ _locationList <$> locationName_ apiFormat lang key input
+  where apiFormat = Just FormatJSON
+        lang      = Just $ fromMaybe English l
+        key       = Just k
+        input     = Just i
 
 departureBoard :: Maybe ApiLanguage -> AuthKey -> StopId -> Day -> TimeOfDay -> IO (Either ServantError [Departure])
-departureBoard l k s d t = runEitherT $ _departure <$>  departureBoard_ format lang key stop day time
-  where format = Just FormatJSON
-        lang   = Just $ fromMaybe English l
-        key    = Just k
-        stop   = Just s
-        day    = Just d
-        time   = Just t
+departureBoard l k s d t = runEitherT $ _departure <$>  departureBoard_ apiFormat lang key stop day time
+  where apiFormat = Just FormatJSON
+        lang      = Just $ fromMaybe English l
+        key       = Just k
+        stop      = Just s
+        day       = Just d
+        time      = Just t
 
 arrivalBoard :: Maybe ApiLanguage -> AuthKey -> StopId -> Day -> TimeOfDay -> IO (Either ServantError [Arrival])
-arrivalBoard l k s d t = runEitherT $ _arrival <$> arrivalBoard_ format lang key stop day time
-  where format = Just FormatJSON
-        lang   = Just $ fromMaybe English l
-        key    = Just k
-        stop   = Just s
-        day    = Just d
-        time   = Just t
+arrivalBoard l k s d t = runEitherT $ _arrival <$> arrivalBoard_ apiFormat lang key stop day time
+  where apiFormat = Just FormatJSON
+        lang      = Just $ fromMaybe English l
+        key       = Just k
+        stop      = Just s
+        day       = Just d
+        time      = Just t
 
 locationName_ :: Maybe ApiFormat -> Maybe ApiLanguage -> Maybe AuthKey -> Maybe Text -> EitherT ServantError IO LocationResponse
 departureBoard_ :: Maybe ApiFormat -> Maybe ApiLanguage -> Maybe AuthKey -> Maybe StopId -> Maybe Day -> Maybe TimeOfDay -> EitherT ServantError IO DepartureBoardResponse
