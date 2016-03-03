@@ -125,23 +125,66 @@ instance ToJSON TransportType where
   toJSON RE    = "RE"
   toJSON SBahn = "S"
 
--- | DepartureOrArrival
-data Connection = Connection
-  { _connectionName :: Text
-  , _connectionTransportType :: TransportType
-  , _connectionStopId        :: StopId
+toTransportType :: Text -> TransportType
+toTransportType "ICE" = ICE
+toTransportType "IC"  = IC
+toTransportType "IRE" = IRE
+toTransportType "RE"  = RE
+toTransportType "S"   = SBahn
+
+data Arrival = Arrival
+  { _arrivalName :: Text
+  , _arrivalTransportType :: TransportType
+  , _arrivalStopId        :: StopId
   -- | combination of date and time, time zone assumed to be GMT/UTC + 01:00
-  , _connectionDateTime      :: LocalTime
-  , _connectionStop          :: Text
-  , _connectionDirection     :: Text
-  , _connectionTrack         :: Text
-  , _connectionJourneyRef    :: JourneyRef
+  , _arrivalDateTime      :: LocalTime
+  , _arrivalStop          :: Text
+  , _arrivalOrigin        :: Text
+  , _arrivalTrack         :: Text
+  , _arrivalJourneyRef    :: JourneyRef
   } deriving (Show, Eq)
 
-instance FromJSON Connection where
-  parseJSON (Object v) = Connection <$>
+instance FromJSON Arrival where
+  parseJSON (Object v) = Arrival <$>
                           v .: "name" <*>
-                          v .: "type" <*>
+                          (toTransportType <$> v .: "type") <*>
+                          (StopId  <$> v .: "stopid") <*> -- API sends Int as String
+                          (LocalTime <$>
+                             (parseApiDate <$> v .: "date") <*>
+                             (parseApiTime <$> v .: "time")) <*>
+                          v .: "stop" <*>
+                          v .: "origin" <*>
+                          v .: "track" <*>
+                          v .: "JourneyDetailRef"
+  parseJSON invalid    = typeMismatch "Arrival" invalid
+
+instance ToJSON Arrival where
+  toJSON a = object [ "name"             .= _arrivalName a
+                    , "type"             .= _arrivalTransportType a
+                    , "stopid"           .= (unStopId . _arrivalStopId) a
+                    , "date"             .= (formatApiDate . _arrivalDateTime) a
+                    , "time"             .= (formatApiTime . _arrivalDateTime) a
+                    , "stop"             .= _arrivalStop a
+                    , "origin"           .= _arrivalOrigin a
+                    , "track"            .= _arrivalTrack a
+                    , "JourneyDetailRef" .= _arrivalJourneyRef a]
+
+data Departure = Departure
+  { _departureName :: Text
+  , _departureTransportType :: TransportType
+  , _departureStopId        :: StopId
+  -- | combination of date and time, time zone assumed to be GMT/UTC + 01:00
+  , _departureDateTime      :: LocalTime
+  , _departureStop          :: Text
+  , _departureDirection     :: Text
+  , _departureTrack         :: Text
+  , _departureJourneyRef    :: JourneyRef
+  } deriving (Show, Eq)
+
+instance FromJSON Departure where
+  parseJSON (Object v) = Departure <$>
+                          v .: "name" <*>
+                          (toTransportType <$> v .: "type") <*>
                           (StopId  <$> v .: "stopid") <*> -- API sends Int as String
                           (LocalTime <$>
                              (parseApiDate <$> v .: "date") <*>
@@ -150,18 +193,18 @@ instance FromJSON Connection where
                           v .: "direction" <*>
                           v .: "track" <*>
                           v .: "JourneyDetailRef"
-  parseJSON invalid    = typeMismatch "Connection" invalid
+  parseJSON invalid    = typeMismatch "Arrival" invalid
 
-instance ToJSON Connection where
-  toJSON a = object [ "name"             .= _connectionName a
-                    , "type"             .= _connectionTransportType a
-                    , "stopid"           .= (unStopId . _connectionStopId) a
-                    , "date"             .= (formatApiDate . _connectionDateTime) a
-                    , "time"             .= (formatApiTime . _connectionDateTime) a
-                    , "stop"             .= _connectionStop a
-                    , "direction"        .= _connectionDirection a
-                    , "track"            .= _connectionTrack a
-                    , "JourneyDetailRef" .= _connectionJourneyRef a]
+instance ToJSON Departure where
+  toJSON a = object [ "name"             .= _departureName a
+                    , "type"             .= _departureTransportType a
+                    , "stopid"           .= (unStopId . _departureStopId) a
+                    , "date"             .= (formatApiDate . _departureDateTime) a
+                    , "time"             .= (formatApiTime . _departureDateTime) a
+                    , "stop"             .= _departureStop a
+                    , "direction"        .= _departureDirection a
+                    , "track"            .= _departureTrack a
+                    , "JourneyDetailRef" .= _departureJourneyRef a]
 
 data JourneyRef = JourneyRef
   { _journeyRef :: Text
@@ -250,7 +293,6 @@ instance ToJSON Name where
                     , "routeIdxFrom" .= _nameRouteIndexFrom a
                     , "routeIdxTo"   .= _nameRouteIndexTo a]
 
-
 data JourneyType = JourneyType
   { _journeyTypeTransportType  :: TransportType
   , _journeyTypeRouteIndexFrom :: RouteIndex
@@ -259,7 +301,7 @@ data JourneyType = JourneyType
 
 instance FromJSON JourneyType where
   parseJSON (Object v) = JourneyType <$>
-                         v .: "type" <*>
+                         (toTransportType <$> v .: "type") <*>
                          (RouteIndex <$> v .: "routeIdxFrom") <*>
                          (RouteIndex <$> v .: "routeIdxTo")
   parseJSON invalid    = typeMismatch "JourneyType" invalid

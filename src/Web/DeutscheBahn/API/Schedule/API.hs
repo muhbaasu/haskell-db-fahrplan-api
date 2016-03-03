@@ -43,11 +43,19 @@ data LocationResponse = LocationResponse { _locationList :: LocationList } deriv
 instance FromJSON LocationResponse where
   parseJSON (Object v) = LocationResponse <$> v .: "LocationList"
 
-data DepartureBoardResponse = DepartureBoardResponse { _departure :: [Journey] } deriving (Show, Eq)
+data DepartureBoardResponse = DepartureBoardResponse
+  { _departure :: [Departure] } deriving (Show, Eq)
 
 instance FromJSON DepartureBoardResponse where
   parseJSON (Object v) = DepartureBoardResponse <$>
                           ((v .: "DepartureBoard") >>= (.: "Departure"))
+
+data ArrivalBoardResponse = ArrivalBoardResponse
+  { _arrival :: [Arrival]} deriving (Show, Eq)
+
+instance FromJSON ArrivalBoardResponse where
+  parseJSON (Object v) = ArrivalBoardResponse <$>
+                          ((v .: "ArrivalBoard") >>= (.: "Arrival"))
 
 newtype AuthKey = AuthKey {_unAuthKey :: Text} deriving (Show, Eq)
 
@@ -69,6 +77,14 @@ type DeutscheBahnAPI =
     :> QueryParam "date"   Day
     :> QueryParam "time"   TimeOfDay
     :> Get '[JSON] DepartureBoardResponse
+  :<|> "bin/rest.exe/arrivalBoard"
+    :> QueryParam "format" ApiFormat
+    :> QueryParam "lang"   ApiLanguage
+    :> QueryParam "authKey" AuthKey
+    :> QueryParam "id"     StopId
+    :> QueryParam "date"   Day
+    :> QueryParam "time"   TimeOfDay
+    :> Get '[JSON] ArrivalBoardResponse
 
 api :: Proxy DeutscheBahnAPI
 api = Proxy
@@ -79,7 +95,11 @@ locationName f l k i = runEitherT $ locationName_ f l k i
 departureBoard :: Maybe ApiFormat -> Maybe ApiLanguage -> Maybe AuthKey -> Maybe StopId -> Maybe Day -> Maybe TimeOfDay -> IO (Either ServantError DepartureBoardResponse)
 departureBoard f l k s d t = runEitherT $ departureBoard_ f l k s d t
 
+arrivalBoard :: Maybe ApiFormat -> Maybe ApiLanguage -> Maybe AuthKey -> Maybe StopId -> Maybe Day -> Maybe TimeOfDay -> IO (Either ServantError ArrivalBoardResponse)
+arrivalBoard f l k s d t = runEitherT $ arrivalBoard_ f l k s d t
+
 locationName_ :: Maybe ApiFormat -> Maybe ApiLanguage -> Maybe AuthKey -> Maybe Text -> EitherT ServantError IO LocationResponse
 departureBoard_ :: Maybe ApiFormat -> Maybe ApiLanguage -> Maybe AuthKey -> Maybe StopId -> Maybe Day -> Maybe TimeOfDay -> EitherT ServantError IO DepartureBoardResponse
-locationName_ :<|> departureBoard_ = client api (BaseUrl Http "open-api.bahn.de" 80)
+arrivalBoard_ :: Maybe ApiFormat -> Maybe ApiLanguage -> Maybe AuthKey -> Maybe StopId -> Maybe Day -> Maybe TimeOfDay -> EitherT ServantError IO ArrivalBoardResponse
+locationName_ :<|> departureBoard_ :<|> arrivalBoard_ = client api (BaseUrl Http "open-api.bahn.de" 80)
 

@@ -46,8 +46,8 @@ departureTime :: LocalTime
 departureTime = utcToLocalTime germanyTimeZone departureUTC
   where departureUTC = fromJust $ parseISO8601 "2016-02-22T14:01:00Z"
 
-departure :: Connection
-departure = Connection "RE 15306" RE (StopId "8000105") departureTime "Frankfurt(Main)Hbf" "Limburg(Lahn)" "3" ref
+departure :: Departure
+departure = Departure "RE 15306" RE (StopId "8000105") departureTime "Frankfurt(Main)Hbf" "Limburg(Lahn)" "3" ref
 
 refJSON :: ByteString
 refJSON = fromStrict $ encodeUtf8 [text|
@@ -79,7 +79,7 @@ unitTests = testGroup "Parsing"
     testCase "parse JourneyDetailRef" $
       Right ref @=? (eitherDecode refJSON :: Either String JourneyRef)
   , testCase "parse Departure" $
-      Right departure @=? (eitherDecode departureJSON :: Either String Connection)
+      Right departure @=? (eitherDecode departureJSON :: Either String Departure)
   , testCase "parse StopLocation" $
       Right stopLocation @=? (eitherDecode stopLocationJSON :: Either String StopLocation)
   ]
@@ -120,7 +120,19 @@ instance Arbitrary JourneyRef where
 instance Arbitrary StopId where
   arbitrary = StopId <$> arbitrary
 
-instance Arbitrary Connection where
+instance Arbitrary Arrival where
+  arbitrary = do
+    name          <- arbitrary
+    transportType <- arbitrary
+    stopId        <- arbitrary
+    time          <- arbitrary
+    stop          <- arbitrary
+    origin        <- arbitrary
+    track         <- arbitrary
+    ref           <- arbitrary
+    return $ Arrival name transportType stopId time stop origin track ref
+
+instance Arbitrary Departure where
   arbitrary = do
     name          <- arbitrary
     transportType <- arbitrary
@@ -130,7 +142,7 @@ instance Arbitrary Connection where
     dir           <- arbitrary
     track         <- arbitrary
     ref           <- arbitrary
-    return $ Connection name transportType stopId time stop dir track ref
+    return $ Departure name transportType stopId time stop dir track ref
 
 instance Arbitrary CoordLocation where
   arbitrary = do
@@ -199,10 +211,12 @@ encDec :: (FromJSON a, ToJSON a, Eq a) => a -> Bool
 encDec a = Right a == eitherDecode (encode a)
 
 quickCheckTests = testGroup "Parsing and Serialization"
-  [ QC.testProperty "serialize/deserialize connection" $
-    \connection -> encDec (connection::Connection)
+  [ QC.testProperty "serialize/deserialize arrival" $
+    \arrival -> encDec (arrival::Arrival)
   , QC.testProperty "serialize/deserialize coordLocation" $
     \coordLocation -> encDec (coordLocation::CoordLocation)
+  , QC.testProperty "serialize/deserialize departure" $
+    \departure -> encDec (departure::Departure)
   , QC.testProperty "serialize/deserialize journey" $
     \journey -> encDec (journey::Journey)
   , QC.testProperty "serialize/deserialize journeyRef" $
