@@ -9,6 +9,7 @@ module Web.DeutscheBahn.API.Schedule.API where
 import           Data.Aeson
 import           GHC.Generics
 import           Data.Text                  (Text)
+import           Data.Maybe                 (fromMaybe)
 import           Data.Proxy
 import           Data.Time.Calendar         (Day)
 import           Data.Time.LocalTime        (TimeOfDay)
@@ -89,14 +90,30 @@ type DeutscheBahnAPI =
 api :: Proxy DeutscheBahnAPI
 api = Proxy
 
-locationName :: Maybe ApiFormat -> Maybe ApiLanguage -> Maybe AuthKey -> Maybe Text -> IO (Either ServantError LocationResponse)
-locationName f l k i = runEitherT $ locationName_ f l k i
+locationName :: Maybe ApiLanguage ->AuthKey -> Text -> IO (Either ServantError LocationResponse)
+locationName l k i = runEitherT $ locationName_ format lang key input
+  where format = Just FormatJSON
+        lang   = Just $ fromMaybe English l
+        key    = Just k
+        input  = Just i
 
-departureBoard :: Maybe ApiFormat -> Maybe ApiLanguage -> Maybe AuthKey -> Maybe StopId -> Maybe Day -> Maybe TimeOfDay -> IO (Either ServantError DepartureBoardResponse)
-departureBoard f l k s d t = runEitherT $ departureBoard_ f l k s d t
+departureBoard :: Maybe ApiLanguage -> AuthKey -> StopId -> Day -> TimeOfDay -> IO (Either ServantError DepartureBoardResponse)
+departureBoard l k s d t = runEitherT $ departureBoard_ format lang key stop day time
+  where format = Just FormatJSON
+        lang   = Just $ fromMaybe English l
+        key    = Just k
+        stop   = Just s
+        day    = Just d
+        time   = Just t
 
-arrivalBoard :: Maybe ApiFormat -> Maybe ApiLanguage -> Maybe AuthKey -> Maybe StopId -> Maybe Day -> Maybe TimeOfDay -> IO (Either ServantError ArrivalBoardResponse)
-arrivalBoard f l k s d t = runEitherT $ arrivalBoard_ f l k s d t
+arrivalBoard :: Maybe ApiLanguage -> AuthKey -> StopId -> Day -> TimeOfDay -> IO (Either ServantError ArrivalBoardResponse)
+arrivalBoard l k s d t = runEitherT $ arrivalBoard_ format lang key stop day time
+  where format = Just FormatJSON
+        lang   = Just $ fromMaybe English l
+        key    = Just k
+        stop   = Just s
+        day    = Just d
+        time   = Just t
 
 locationName_ :: Maybe ApiFormat -> Maybe ApiLanguage -> Maybe AuthKey -> Maybe Text -> EitherT ServantError IO LocationResponse
 departureBoard_ :: Maybe ApiFormat -> Maybe ApiLanguage -> Maybe AuthKey -> Maybe StopId -> Maybe Day -> Maybe TimeOfDay -> EitherT ServantError IO DepartureBoardResponse
