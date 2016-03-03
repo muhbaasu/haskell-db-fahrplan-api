@@ -17,6 +17,7 @@ cabal-version:       >=1.10
 
 library
   exposed-modules:     Web.DeutscheBahn.API.Schedule
+                     , Web.DeutscheBahn.API.Schedule.API
                      , Web.DeutscheBahn.API.Schedule.Data
   -- other-modules:
   -- other-extensions:
@@ -36,6 +37,8 @@ test-suite test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      tests
   main-is:             test.hs
+  other-modules:       Quickcheck
+                     , Unit
   build-depends:       aeson                >=0.9
                      , base                 >=4 && <5
                      , bytestring           >=0.10
