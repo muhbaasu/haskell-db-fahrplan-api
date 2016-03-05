@@ -153,11 +153,11 @@ journeyDetail :: Maybe ApiLanguage ->
 journeyDetail l k r = runEitherT $ _journeyDetail <$> journeyDetail_ apiFormat lang key ref date evaId sType
   where lang       = Just $ fromMaybe English l
         key        = Just k
-        refDetails = parseJourneyRefURI $ _journeyRef r
-        ref        = rightToMaybe $ _refDetailsRef   <$> refDetails
-        date       = rightToMaybe $ _refDetailsDate  <$> refDetails
-        evaId      = rightToMaybe $ _refDetailsEvaId <$> refDetails
-        sType      = rightToMaybe $ _refDetailsType  <$> refDetails
+        refDetails = rightToMaybe <$> parseJourneyRefURI $ _journeyRef r
+        ref        = _refDetailsRef   <$> refDetails
+        date       = _refDetailsDate  <$> refDetails
+        evaId      = _refDetailsEvaId <$> refDetails
+        sType      = _refDetailsType  <$> refDetails
 
 locationName_   :: Maybe ApiFormat ->
                    Maybe ApiLanguage ->
