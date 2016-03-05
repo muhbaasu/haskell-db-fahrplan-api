@@ -6,6 +6,7 @@ module Web.DeutscheBahn.API.Schedule.Data where
 import           Control.Lens.Getter            (view)
 import           Data.Aeson
 import           Data.Aeson.Types               (typeMismatch)
+import qualified Data.ByteString                as BS
 import           Data.Maybe                     (fromJust)
 import           Data.Text                      (Text, unpack, pack)
 import           Data.Time.Calendar             (Day)
@@ -13,6 +14,9 @@ import           Data.Time.LocalTime            (LocalTime(..), TimeOfDay, TimeZ
 import           Data.Time.Format               (FormatTime, defaultTimeLocale, formatTime, parseTimeOrError)
 import           GHC.Generics                   (Generic)
 import           Servant.API                    (ToText(..))
+
+import           Network.URI                    (URI, parseURI, unEscapeString)
+import           Network.HTTP.Types.URI         (parseQuery)
 
 newtype RouteIndex = RouteIndex {unRouteIndex :: Int} deriving (Eq, Show, Generic, ToJSON, FromJSON)
 newtype StopId     = StopId     {unStopId     :: Text} deriving (Eq, Show, Generic, ToJSON, FromJSON)
@@ -35,6 +39,17 @@ formatApiTime = formatTime defaultTimeLocale "%H:%M"
 -- | format date to e.g. 2016-02-22
 formatApiDate :: FormatTime t => t -> String
 formatApiDate = formatTime defaultTimeLocale "%Y-%m-%d"
+
+newtype Ref = Ref {unRef :: Text} deriving (Eq, Show, ToText)
+
+newtype EvaId = EvaId {unEvaId :: Text} deriving (Eq, Show, ToText)
+
+data RefDetails = RefDetails
+  { _refDetailsDate  :: Day
+  , _refDetailsRef   :: Ref
+  , _refDetailsEvaId :: EvaId
+  , _refDetailsType  :: Text
+  } deriving (Show, Eq)
 
 instance ToText TimeOfDay where
   toText t = pack $ formatApiTime t
@@ -165,7 +180,7 @@ instance FromJSON Departure where
   parseJSON (Object v) = Departure <$>
                           v .: "name" <*>
                           (toTransportType <$> v .: "type") <*>
-                          (StopId  <$> v .: "stopid") <*> -- API sends Int as String
+                          (StopId  <$> v .: "stopid") <*>
                           (LocalTime <$>
                              (parseApiDate <$> v .: "date") <*>
                              (parseApiTime <$> v .: "time")) <*>
@@ -191,11 +206,14 @@ data JourneyRef = JourneyRef
   } deriving (Show, Eq)
 
 instance FromJSON JourneyRef where
-  parseJSON (Object v) = JourneyRef <$> v .: "ref"
+  parseJSON (Object v) = JourneyRef <$> (v .: "ref")
   parseJSON invalid    = typeMismatch "JourneyRef" invalid
 
 instance ToJSON JourneyRef where
-  toJSON a = object [ "ref" .= _journeyRef a]
+  toJSON a = object [ "ref" .= (_journeyRef a )]
+
+instance ToText JourneyRef where
+  toText j = pack . show $ _journeyRef j
 
 data Journey = Journey
   { _journeyStops     :: [Stop]

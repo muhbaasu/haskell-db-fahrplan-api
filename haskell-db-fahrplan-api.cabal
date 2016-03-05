@@ -19,12 +19,17 @@ library
   exposed-modules:     Web.DeutscheBahn.API.Schedule
                      , Web.DeutscheBahn.API.Schedule.API
                      , Web.DeutscheBahn.API.Schedule.Data
+                     , Web.DeutscheBahn.API.Schedule.JourneyRefURIParser
   -- other-modules:
   -- other-extensions:
   build-depends:       aeson          >=0.9
+                     , attoparsec     >=0.13
                      , base           >=4.8 && <4.9
+                     , bytestring     >=0.10
                      , either         >=4.4
+                     , http-types     >=0.9
                      , lens           >=4.13
+                     , network-uri    >=2.6
                      , text           >=1.2
                      , time           >=1.5
                      , servant        >=0.4.4
@@ -40,6 +45,7 @@ test-suite test
   other-modules:       Quickcheck
                      , Unit
   build-depends:       aeson                >=0.9
+                     , attoparsec           >=0.13
                      , base                 >=4 && <5
                      , bytestring           >=0.10
                      , iso8601-time         >=0.1
@@ -50,4 +56,3 @@ test-suite test
                      , text                 >=1.2
                      , time                 >=1.5
                      , haskell-db-fahrplan-api
-
