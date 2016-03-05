@@ -7,6 +7,7 @@ module Web.DeutscheBahn.API.Schedule.API where
 
 import           Data.Aeson
 import           GHC.Generics
+import           Data.Either.Combinators    (rightToMaybe)
 import           Data.Text                  (Text)
 import           Data.Maybe                 (fromMaybe)
 import           Data.Proxy
@@ -17,6 +18,7 @@ import           Servant.API
 import           Servant.Client
 
 import Web.DeutscheBahn.API.Schedule.Data
+import Web.DeutscheBahn.API.Schedule.JourneyRefURIParser
 
 data ApiFormat = FormatJSON | FormatXML
 
@@ -144,17 +146,18 @@ arrivalBoard l k s d t = runEitherT $ _arrival <$> arrivalBoard_ apiFormat lang 
         day       = Just d
         time      = Just t
 
-journeyRef :: Maybe ApiLanguage ->
-              AuthKey ->
-              RefDetails ->
-              IO (Either ServantError Journey)
-journeyRef l k r = runEitherT $ _journeyDetail <$> journeyRef_ apiFormat lang key ref date evaId sType
-  where lang      = Just $ fromMaybe English l
-        key       = Just k
-        ref       = Just $ _refDetailsRef r
-        date      = Just $ _refDetailsDate r
-        evaId     = Just $ _refDetailsEvaId r
-        sType     = Just $ _refDetailsType r
+journeyDetail :: Maybe ApiLanguage ->
+                 AuthKey ->
+                 JourneyRef ->
+                 IO (Either ServantError Journey)
+journeyDetail l k r = runEitherT $ _journeyDetail <$> journeyDetail_ apiFormat lang key ref date evaId sType
+  where lang       = Just $ fromMaybe English l
+        key        = Just k
+        refDetails = parseJourneyRefURI $ _journeyRef r
+        ref        = rightToMaybe $ _refDetailsRef   <$> refDetails
+        date       = rightToMaybe $ _refDetailsDate  <$> refDetails
+        evaId      = rightToMaybe $ _refDetailsEvaId <$> refDetails
+        sType      = rightToMaybe $ _refDetailsType  <$> refDetails
 
 locationName_   :: Maybe ApiFormat ->
                    Maybe ApiLanguage ->
@@ -175,7 +178,7 @@ arrivalBoard_   :: Maybe ApiFormat ->
                    Maybe Day ->
                    Maybe TimeOfDay ->
                    EitherT ServantError IO ArrivalBoardResponse
-journeyRef_     :: Maybe ApiFormat ->
+journeyDetail_  :: Maybe ApiFormat ->
                    Maybe ApiLanguage ->
                    Maybe AuthKey ->
                    Maybe Ref ->
@@ -186,4 +189,4 @@ journeyRef_     :: Maybe ApiFormat ->
 locationName_
   :<|> departureBoard_
   :<|> arrivalBoard_
-  :<|> journeyRef_ = client api (BaseUrl Http "open-api.bahn.de" 80)
+  :<|> journeyDetail_ = client api (BaseUrl Http "open-api.bahn.de" 80)
