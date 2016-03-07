@@ -42,17 +42,21 @@ test-suite test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      tests
   main-is:             test.hs
-  other-modules:       Quickcheck
+  other-modules:       Integration
+                     , Quickcheck
                      , Unit
   build-depends:       aeson                >=0.9
                      , attoparsec           >=0.13
                      , base                 >=4 && <5
                      , bytestring           >=0.10
+                     , either               >=4.4
                      , iso8601-time         >=0.1
                      , tasty                >=0.11
                      , tasty-hunit          >=0.9
                      , tasty-quickcheck     >=0.8
+                     , transformers         >= 0.4
                      , neat-interpolation   >=0.3
                      , text                 >=1.2
+                     , servant-client >=0.4.4
                      , time                 >=1.5
                      , haskell-db-fahrplan-api

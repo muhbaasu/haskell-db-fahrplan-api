@@ -5,7 +5,6 @@ High-level bindings to the db fahrplan api based on servant.
 
 [API Definition](http://data.deutschebahn.com/apis/fahrplan)
 
-High level types do not not exactly match the API definition.
-- Date and time are combined to local time.
-- Langitude and longitude are combined to coordinates.
+## Integration Test Setup
+To run the integration tests locally set the environment variable `DEUTSCHE_BAHN_AUTH_KEY` to the key you received during the API registration process. E.g. `export DEUTSCHE_BAHN_AUTH_KEY=insert_key`
 
