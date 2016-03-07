@@ -5,15 +5,15 @@
 
 module Web.DeutscheBahn.API.Schedule.API where
 
+import           Control.Monad.Trans.Either (EitherT, runEitherT)
 import           Data.Aeson
-import           GHC.Generics
 import           Data.Either.Combinators    (rightToMaybe)
 import           Data.Text                  (Text)
 import           Data.Maybe                 (fromMaybe)
 import           Data.Proxy
 import           Data.Time.Calendar         (Day)
 import           Data.Time.LocalTime        (TimeOfDay)
-import           Control.Monad.Trans.Either (EitherT, runEitherT)
+import           GHC.Generics
 import           Servant.API
 import           Servant.Client
 

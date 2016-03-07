@@ -1,9 +1,10 @@
-{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving, OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving, OverloadedStrings, TemplateHaskell #-}
 
 -- | Type definitions for the Fahrplan API
 module Web.DeutscheBahn.API.Schedule.Data where
 
 import           Control.Lens.Getter            (view)
+import           Control.Lens.TH                (makeLenses)
 import           Data.Aeson
 import           Data.Aeson.Types               (typeMismatch)
 import qualified Data.ByteString                as BS
@@ -14,9 +15,6 @@ import           Data.Time.LocalTime            (LocalTime(..), TimeOfDay, TimeZ
 import           Data.Time.Format               (FormatTime, defaultTimeLocale, formatTime, parseTimeOrError)
 import           GHC.Generics                   (Generic)
 import           Servant.API                    (ToText(..))
-
-import           Network.URI                    (URI, parseURI, unEscapeString)
-import           Network.HTTP.Types.URI         (parseQuery)
 
 newtype RouteIndex = RouteIndex {unRouteIndex :: Int} deriving (Eq, Show, Generic, ToJSON, FromJSON)
 newtype StopId     = StopId     {unStopId     :: Text} deriving (Eq, Show, Generic, ToJSON, FromJSON)
@@ -51,6 +49,8 @@ data RefDetails = RefDetails
   , _refDetailsType  :: Text
   } deriving (Show, Eq)
 
+makeLenses ''RefDetails
+
 instance ToText TimeOfDay where
   toText t = pack $ formatApiTime t
 
@@ -76,6 +76,8 @@ data StopLocation = StopLocation
   -- | combination of Latitude, Longitude
   , _stopLocationCoordinate   :: Coordinate
   } deriving (Show, Eq)
+
+makeLenses ''StopLocation
 
 instance FromJSON StopLocation where
   parseJSON (Object v) = StopLocation <$>
@@ -127,6 +129,139 @@ toTransportType "RE"    = RE
 toTransportType "S"     = SBahn
 toTransportType unknown = UnknownTransport unknown
 
+data Stop = Stop
+  { _stopId            :: StopId
+  , _stopName          :: Text
+  -- | combination of Latitude, Longitude
+  , _stopCoordinate    :: Coordinate
+  , _stopRouteIndex    :: RouteIndex
+  -- | combination of date and time
+  , _stopDepartureTime :: LocalTime
+  , _stopTrack         :: Text
+  } deriving (Show, Eq)
+
+makeLenses ''Stop
+
+instance FromJSON Stop where
+  parseJSON (Object v) = Stop <$>
+                         v .: "stop" <*>
+                         v .: "name" <*>
+                         (Coordinate <$> (v .: "lat") <*> (v .: "lon")) <*>
+                         v .: "routeIdx" <*>
+                         (LocalTime <$>
+                            (parseApiDate <$> v .: "depDate") <*>
+                            (parseApiTime <$> v .: "depTime")) <*>
+                         v .: "track"
+  parseJSON invalid    = typeMismatch "Stop" invalid
+
+instance ToJSON Stop where
+  toJSON a = object [ "stop" .= _stopId a
+                    , "name" .= _stopName a
+                    , "lat"  .= (_latitude . _stopCoordinate) a
+                    , "lon"  .= (_longitude . _stopCoordinate) a
+                    , "routeIdx" .= _stopRouteIndex a
+                    , "depTime" .= (formatApiTime . _stopDepartureTime) a
+                    , "depDate" .= (formatApiDate . _stopDepartureTime) a
+                    , "track"   .= _stopTrack a
+                    ]
+
+data Name = Name
+  { _nameName           :: Text
+  , _nameRouteIndexFrom :: RouteIndex
+  , _nameRouteIndexTo   :: RouteIndex
+  } deriving (Show, Eq)
+
+makeLenses ''Name
+
+instance FromJSON Name where
+  parseJSON (Object v) = Name <$>
+                         v .: "name" <*>
+                         (RouteIndex <$>  v .: "routeIdxFrom") <*>
+                         (RouteIndex <$>  v .: "routeIdxTo")
+  parseJSON invalid    = typeMismatch "Name" invalid
+
+instance ToJSON Name where
+  toJSON a = object [ "name"         .= _nameName a
+                    , "routeIdxFrom" .= _nameRouteIndexFrom a
+                    , "routeIdxTo"   .= _nameRouteIndexTo a]
+
+data JourneyRef = JourneyRef
+  { _journeyRef :: Text
+  } deriving (Show, Eq)
+
+instance FromJSON JourneyRef where
+  parseJSON (Object v) = JourneyRef <$> (v .: "ref")
+  parseJSON invalid    = typeMismatch "JourneyRef" invalid
+
+instance ToJSON JourneyRef where
+  toJSON a = object [ "ref" .= _journeyRef a ]
+
+instance ToText JourneyRef where
+  toText j = pack . show $ _journeyRef j
+
+data JourneyType = JourneyType
+  { _journeyTypeTransportType  :: TransportType
+  , _journeyTypeRouteIndexFrom :: RouteIndex
+  , _journeyTypeRouteIndexTo   :: RouteIndex
+  } deriving (Show, Eq)
+
+makeLenses ''JourneyType
+
+instance FromJSON JourneyType where
+  parseJSON (Object v) = JourneyType <$>
+                         (toTransportType <$> v .: "type") <*>
+                         (RouteIndex <$> v .: "routeIdxFrom") <*>
+                         (RouteIndex <$> v .: "routeIdxTo")
+  parseJSON invalid    = typeMismatch "JourneyType" invalid
+
+instance ToJSON JourneyType where
+  toJSON a = object [ "type"         .= _journeyTypeTransportType a
+                    , "routeIdxFrom" .= _journeyTypeRouteIndexFrom a
+                    , "routeIdxTo"   .= _journeyTypeRouteIndexTo a]
+
+data Operator = Operator
+  { _operatorName :: Text
+  , _operatorRouteIndexFrom :: RouteIndex
+  , _operatorRouteIndexTo   :: RouteIndex
+  } deriving (Show, Eq)
+
+makeLenses ''Operator
+
+instance FromJSON Operator where
+  parseJSON (Object v) = Operator <$>
+                         v .: "name" <*>
+                         (RouteIndex <$> v .: "routeIdxFrom") <*>
+                         (RouteIndex <$> v .: "routeIdxTo")
+  parseJSON invalid    = typeMismatch "Operator" invalid
+
+instance ToJSON Operator where
+  toJSON a = object [ "name"         .= _operatorName a
+                    , "routeIdxFrom" .= _operatorRouteIndexFrom a
+                    , "routeIdxTo"   .= _operatorRouteIndexTo a]
+
+data Note = Note
+  { _noteKey            :: Text
+  , _notePriority       :: Int
+  , _noteRouteIndexFrom :: RouteIndex
+  , _noteRouteIndexTo   :: RouteIndex
+  } deriving (Show, Eq)
+
+makeLenses ''Note
+
+instance FromJSON Note where
+  parseJSON (Object v) = Note <$>
+                         v .: "key" <*>
+                         v .: "priority" <*>
+                         (RouteIndex <$> v .: "routeIdxFrom") <*>
+                         (RouteIndex <$> v .: "routeIdxTo")
+  parseJSON invalid    = typeMismatch "Note" invalid
+
+instance ToJSON Note where
+  toJSON a = object [ "key"          .= _noteKey a
+                    , "priority"     .= _notePriority a
+                    , "routeIdxFrom" .= _noteRouteIndexFrom a
+                    , "routeIdxTo"   .= _noteRouteIndexTo a]
+
 data Arrival = Arrival
   { _arrivalName :: Text
   , _arrivalTransportType :: TransportType
@@ -138,6 +273,8 @@ data Arrival = Arrival
   , _arrivalTrack         :: Text
   , _arrivalJourneyRef    :: JourneyRef
   } deriving (Show, Eq)
+
+makeLenses ''Arrival
 
 instance FromJSON Arrival where
   parseJSON (Object v) = Arrival <$>
@@ -176,6 +313,8 @@ data Departure = Departure
   , _departureJourneyRef    :: JourneyRef
   } deriving (Show, Eq)
 
+makeLenses ''Departure
+
 instance FromJSON Departure where
   parseJSON (Object v) = Departure <$>
                           v .: "name" <*>
@@ -201,20 +340,6 @@ instance ToJSON Departure where
                     , "track"            .= _departureTrack a
                     , "JourneyDetailRef" .= _departureJourneyRef a]
 
-data JourneyRef = JourneyRef
-  { _journeyRef :: Text
-  } deriving (Show, Eq)
-
-instance FromJSON JourneyRef where
-  parseJSON (Object v) = JourneyRef <$> (v .: "ref")
-  parseJSON invalid    = typeMismatch "JourneyRef" invalid
-
-instance ToJSON JourneyRef where
-  toJSON a = object [ "ref" .= (_journeyRef a )]
-
-instance ToText JourneyRef where
-  toText j = pack . show $ _journeyRef j
-
 data Journey = Journey
   { _journeyStops     :: [Stop]
   , _journeyNames     :: [Name]
@@ -222,6 +347,8 @@ data Journey = Journey
   , _journeyOperators :: [Operator]
   , _journeyNotes     :: [Note]
   } deriving (Show, Eq)
+
+makeLenses ''Journey
 
 instance FromJSON Journey where
   parseJSON (Object v) = Journey <$>
@@ -238,112 +365,3 @@ instance ToJSON Journey where
                     , "types"     .= object ["type"     .= toJSON (_journeyTypes a)]
                     , "operators" .= object ["operator" .= toJSON (_journeyOperators a)]
                     , "notes"     .= object ["note"     .= toJSON (_journeyNotes a)]]
-
-data Stop = Stop
-  { _stopId            :: StopId
-  , _stopName          :: Text
-  -- | combination of Latitude, Longitude
-  , _stopCoordinate    :: Coordinate
-  , _stopRouteIndex    :: RouteIndex
-  -- | combination of date and time
-  , _stopDepartureTime :: LocalTime
-  , _stopTrack         :: Text
-  } deriving (Show, Eq)
-
-instance FromJSON Stop where
-  parseJSON (Object v) = Stop <$>
-                         v .: "stop" <*>
-                         v .: "name" <*>
-                         (Coordinate <$> (v .: "lat") <*> (v .: "lon")) <*>
-                         v .: "routeIdx" <*>
-                         (LocalTime <$>
-                            (parseApiDate <$> v .: "depDate") <*>
-                            (parseApiTime <$> v .: "depTime")) <*>
-                         v .: "track"
-  parseJSON invalid    = typeMismatch "Stop" invalid
-
-instance ToJSON Stop where
-  toJSON a = object [ "stop" .= _stopId a
-                    , "name" .= _stopName a
-                    , "lat"  .= (_latitude . _stopCoordinate) a
-                    , "lon"  .= (_longitude . _stopCoordinate) a
-                    , "routeIdx" .= _stopRouteIndex a
-                    , "depTime" .= (formatApiTime . _stopDepartureTime) a
-                    , "depDate" .= (formatApiDate . _stopDepartureTime) a
-                    , "track"   .= _stopTrack a
-                    ]
-
-data Name = Name
-  { _nameName           :: Text
-  , _nameRouteIndexFrom :: RouteIndex
-  , _nameRouteIndexTo   :: RouteIndex
-  } deriving (Show, Eq)
-
-instance FromJSON Name where
-  parseJSON (Object v) = Name <$>
-                         v .: "name" <*>
-                         (RouteIndex <$>  v .: "routeIdxFrom") <*>
-                         (RouteIndex <$>  v .: "routeIdxTo")
-  parseJSON invalid    = typeMismatch "Name" invalid
-
-instance ToJSON Name where
-  toJSON a = object [ "name"         .= _nameName a
-                    , "routeIdxFrom" .= _nameRouteIndexFrom a
-                    , "routeIdxTo"   .= _nameRouteIndexTo a]
-
-data JourneyType = JourneyType
-  { _journeyTypeTransportType  :: TransportType
-  , _journeyTypeRouteIndexFrom :: RouteIndex
-  , _journeyTypeRouteIndexTo   :: RouteIndex
-  } deriving (Show, Eq)
-
-instance FromJSON JourneyType where
-  parseJSON (Object v) = JourneyType <$>
-                         (toTransportType <$> v .: "type") <*>
-                         (RouteIndex <$> v .: "routeIdxFrom") <*>
-                         (RouteIndex <$> v .: "routeIdxTo")
-  parseJSON invalid    = typeMismatch "JourneyType" invalid
-
-instance ToJSON JourneyType where
-  toJSON a = object [ "type"         .= _journeyTypeTransportType a
-                    , "routeIdxFrom" .= _journeyTypeRouteIndexFrom a
-                    , "routeIdxTo"   .= _journeyTypeRouteIndexTo a]
-
-data Operator = Operator
-  { _operatorName :: Text
-  , _operatorRouteIndexFrom :: RouteIndex
-  , _operatorRouteIndexTo   :: RouteIndex
-  } deriving (Show, Eq)
-
-instance FromJSON Operator where
-  parseJSON (Object v) = Operator <$>
-                         v .: "name" <*>
-                         (RouteIndex <$> v .: "routeIdxFrom") <*>
-                         (RouteIndex <$> v .: "routeIdxTo")
-  parseJSON invalid    = typeMismatch "Operator" invalid
-
-instance ToJSON Operator where
-  toJSON a = object [ "name"         .= _operatorName a
-                    , "routeIdxFrom" .= _operatorRouteIndexFrom a
-                    , "routeIdxTo"   .= _operatorRouteIndexTo a]
-
-data Note = Note
-  { _noteKey            :: Text
-  , _notePriority       :: Int
-  , _noteRouteIndexFrom :: RouteIndex
-  , _noteRouteIndexTo   :: RouteIndex
-  } deriving (Show, Eq)
-
-instance FromJSON Note where
-  parseJSON (Object v) = Note <$>
-                         v .: "key" <*>
-                         v .: "priority" <*>
-                         (RouteIndex <$> v .: "routeIdxFrom") <*>
-                         (RouteIndex <$> v .: "routeIdxTo")
-  parseJSON invalid    = typeMismatch "Note" invalid
-
-instance ToJSON Note where
-  toJSON a = object [ "key"          .= _noteKey a
-                    , "priority"     .= _notePriority a
-                    , "routeIdxFrom" .= _noteRouteIndexFrom a
-                    , "routeIdxTo"   .= _noteRouteIndexTo a]

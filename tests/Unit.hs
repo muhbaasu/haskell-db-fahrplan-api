@@ -28,7 +28,7 @@ unitTests = testGroup "Unit Test Parsing"
   , testCase "parse Departure" $
       Right departure @=? (eitherDecode departureJSON :: Either String Departure)
   , testCase "parse StopLocation" $
-      Right stopLocation @=? (eitherDecode stopLocationJSON :: Either String StopLocation)
+      Right frankfurtHbf @=? (eitherDecode stopLocationJSON :: Either String StopLocation)
   , testCase "parse JourneyRef URI format" $
       (Right refURIDetails) @=? (parseJourneyRefURI refURI)
   ]
@@ -78,11 +78,11 @@ stopLocationJSON = fromStrict $ encodeUtf8 [text|
  "id":"008000105"
 }|]
 
-stopCoordinate :: Coordinate
-stopCoordinate = Coordinate 50.107149 8.663785
+frankfurtCoord :: Coordinate
+frankfurtCoord = Coordinate 50.107149 8.663785
 
-stopLocation :: StopLocation
-stopLocation = StopLocation (StopId "008000105") "Frankfurt(Main)Hbf" stopCoordinate
+frankfurtHbf :: StopLocation
+frankfurtHbf = StopLocation (StopId "008000105") "Frankfurt(Main)Hbf" frankfurtCoord
 
 refURI :: Text
 refURI =  "http://open-api.bahn.de/bin/rest.exe/v1.0/journeyDetail?ref=227691%2F79221%2F324378%2F86292%2F80%3Fdate%3D2016-03-22%26station_evaId%3D8000105%26station_type%3Darr%26authKey%3DDBhackFrankfurt0316%26lang%3Dde%26format%3Djson%26"
