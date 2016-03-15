@@ -58,7 +58,7 @@ departureTime = utcToLocalTime germanyTimeZone departureUTC
   where departureUTC = fromJust $ parseISO8601 "2016-02-22T14:01:00Z"
 
 departure :: Departure
-departure = Departure "RE 15306" RE (StopId "8000105") departureTime "Frankfurt(Main)Hbf" "Limburg(Lahn)" "3" ref
+departure = Departure "RE 15306" RE (StopId "8000105") departureTime "Frankfurt(Main)Hbf" "Limburg(Lahn)" (Just "3") ref
 
 refJSON :: ByteString
 refJSON = fromStrict $ encodeUtf8 [text|

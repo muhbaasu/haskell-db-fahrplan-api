@@ -270,7 +270,8 @@ data Arrival = Arrival
   , _arrivalDateTime      :: LocalTime
   , _arrivalStop          :: Text
   , _arrivalOrigin        :: Text
-  , _arrivalTrack         :: Text
+  -- | may be Nothing e.g. for SNCF trains
+  , _arrivalTrack         :: Maybe Text
   , _arrivalJourneyRef    :: JourneyRef
   } deriving (Show, Eq)
 
@@ -286,7 +287,7 @@ instance FromJSON Arrival where
                              (parseApiTime <$> v .: "time")) <*>
                           v .: "stop" <*>
                           v .: "origin" <*>
-                          v .: "track" <*>
+                          v .:? "track" <*>
                           v .: "JourneyDetailRef"
   parseJSON invalid    = typeMismatch "Arrival" invalid
 
@@ -309,7 +310,8 @@ data Departure = Departure
   , _departureDateTime      :: LocalTime
   , _departureStop          :: Text
   , _departureDirection     :: Text
-  , _departureTrack         :: Text
+  -- | may be Nothing e.g. for SNCF trains
+  , _departureTrack         :: Maybe Text
   , _departureJourneyRef    :: JourneyRef
   } deriving (Show, Eq)
 
@@ -325,7 +327,7 @@ instance FromJSON Departure where
                              (parseApiTime <$> v .: "time")) <*>
                           v .: "stop" <*>
                           v .: "direction" <*>
-                          v .: "track" <*>
+                          v .:? "track" <*>
                           v .: "JourneyDetailRef"
   parseJSON invalid    = typeMismatch "Arrival" invalid
 

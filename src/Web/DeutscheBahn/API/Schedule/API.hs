@@ -12,7 +12,7 @@ import           Data.Text                  (Text)
 import           Data.Maybe                 (fromMaybe)
 import           Data.Proxy
 import           Data.Time.Calendar         (Day)
-import           Data.Time.LocalTime        (TimeOfDay)
+import           Data.Time.LocalTime        (LocalTime (..), TimeOfDay, localDay, localTimeOfDay)
 import           GHC.Generics
 import           Servant.API
 import           Servant.Client
@@ -114,8 +114,8 @@ apiFormat = Just FormatJSON
 locationName :: Maybe ApiLanguage ->
                 AuthKey ->
                 Text ->
-                IO (Either ServantError LocationList)
-locationName l k i = runEitherT $ _locationList <$> locationName_ apiFormat lang key input
+                IO (Either ServantError [StopLocation])
+locationName l k i = runEitherT $ (_stopLocation . _locationList) <$> locationName_ apiFormat lang key input
   where lang      = Just $ fromMaybe English l
         key       = Just k
         input     = Just i
@@ -123,28 +123,26 @@ locationName l k i = runEitherT $ _locationList <$> locationName_ apiFormat lang
 departureBoard :: Maybe ApiLanguage ->
                   AuthKey ->
                   StopId ->
-                  Day ->
-                  TimeOfDay ->
+                  LocalTime ->
                   IO (Either ServantError [Departure])
-departureBoard l k s d t = runEitherT $ _departure <$>  departureBoard_ apiFormat lang key stop day time
+departureBoard l k s lt = runEitherT $ _departure <$>  departureBoard_ apiFormat lang key stop day time
   where lang      = Just $ fromMaybe English l
         key       = Just k
         stop      = Just s
-        day       = Just d
-        time      = Just t
+        day       = Just $ localDay lt
+        time      = Just $ localTimeOfDay lt
 
 arrivalBoard :: Maybe ApiLanguage ->
                 AuthKey ->
                 StopId ->
-                Day ->
-                TimeOfDay ->
+                LocalTime ->
                 IO (Either ServantError [Arrival])
-arrivalBoard l k s d t = runEitherT $ _arrival <$> arrivalBoard_ apiFormat lang key stop day time
+arrivalBoard l k s lt = runEitherT $ _arrival <$> arrivalBoard_ apiFormat lang key stop day time
   where lang      = Just $ fromMaybe English l
         key       = Just k
         stop      = Just s
-        day       = Just d
-        time      = Just t
+        day       = Just $ localDay lt
+        time      = Just $ localTimeOfDay lt
 
 journeyDetail :: Maybe ApiLanguage ->
                  AuthKey ->
