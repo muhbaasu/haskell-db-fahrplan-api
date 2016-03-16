@@ -1,14 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Integration (integrationTests) where
+module Integration (integrationTests, integrationTestsBrokenAPI) where
 
-import           Data.Either                (isRight)
+import           Data.Either                (isRight, isLeft)
 import           Data.Text                  (pack)
 import           Data.Bifunctor             (bimap)
 import           Data.Time.Clock            (getCurrentTime, utctDay)
 import           Data.Time.Format           (defaultTimeLocale, parseTimeOrError)
 import           Data.Time.LocalTime        (LocalTime, TimeZone (..), hoursToTimeZone, minutesToTimeZone)
-import           Control.Error.Safe         (headErr)
 import           Control.Monad.Trans.Either (EitherT (..), runEitherT)
 import           Control.Monad.IO.Class     (liftIO)
 import           Servant.Client
@@ -20,7 +19,7 @@ import Web.DeutscheBahn.API.Schedule.API
 import Web.DeutscheBahn.API.Schedule.Data
 
 apiAuthKey :: IO AuthKey
-apiAuthKey = return $ AuthKey  "DBhackFrankfurt0316"
+apiAuthKey = fmap (AuthKey . pack) (getEnv "DEUTSCHE_BAHN_AUTH_KEY")
 
 -- | Winter UTC +1
 germanyTimeZone :: TimeZone
@@ -29,38 +28,40 @@ germanyTimeZone = hoursToTimeZone 1
 someTime :: LocalTime
 someTime = parseTimeOrError False defaultTimeLocale "%Y-%m-%dT%H:%M:%S" "2016-04-06T12:00:00"
 
-queryDepartures :: IO (Either ServantError [Departure])
-queryDepartures = do
-  key <- apiAuthKey
-  departureBoard Nothing key (StopId "008000105") someTime
-
-queryArrivals :: IO (Either ServantError [Arrival])
-queryArrivals = do
-  key <- apiAuthKey
-  arrivalBoard Nothing key (StopId "008000105") someTime
-
 integrationTests = testGroup "Querying API"
   [ testCase "locationName" $ do
       authKey <- apiAuthKey
-      stops   <- locationName Nothing authKey "Frankfurt"
-      assertBool (show stops) $ isRight stops
+      locations' <- runEitherT $ locationName Nothing authKey "Frankfurt"
+      assertBool (show locations') $ isRight locations'
   , testCase "arrivalBoard" $ do
-    arrivals <- queryArrivals
-    assertBool (show arrivals) $ isRight arrivals
+      authKey <- apiAuthKey
+      arrivals' <- runEitherT $ arrivalBoard Nothing authKey (StopId "008000105") someTime
+      assertBool (show arrivals') $ isRight arrivals'
   , testCase "departureBoard" $ do
-      departures <- queryDepartures
-      assertBool (show departures) $ isRight departures
-  , testCase "journeyDetails" $ do
-      departures <- queryDepartures
-      authKey    <- apiAuthKey
-      let journeyRef = fmap (_departureJourneyRef . head) departures
-          details    = fmap (journeyDetail Nothing authKey) journeyRef
-      assertBool "left" $ isRight details
-  , testCase "journeyDetails by stop and destination" $ do
-     authKey    <- apiAuthKey
-     utcNow     <- getCurrentTime
-     stops      <- locationName Nothing authKey "Frankfurt"
-     let stopId     = (fmap .fmap) _stopLocationId (headErr "Stop not found" <$> stops)
-         departures = (fmap . fmap) (\s -> departureBoard Nothing authKey s someTime) stopId
-     assertBool "left"$ isRight $ departures
+      authKey <- apiAuthKey
+      departures' <- runEitherT $ departureBoard Nothing authKey (StopId "008000105") someTime
+      assertBool (show departures') $ isRight departures'
+  ]
+
+-- | Currently failing tests due to improper implemented API
+-- | see https://github.com/dbopendata/db-fahrplan-api/issues
+integrationTestsBrokenAPI = testGroup "Currently broken API"
+  [
+    testCase "journeyDetails" $ do
+        authKey    <- apiAuthKey
+        details    <- runEitherT $ do
+           let depQuery = departureBoard Nothing authKey (StopId "008000105") someTime
+           journeyRef' <- (_departureJourneyRef . head) <$> depQuery
+           journeyDetail Nothing authKey journeyRef'
+        -- currently likely broken due to API not accepting proper formatted journeyRef urls
+        assertBool (show details) $ isRight details
+    , testCase "journeyDetails via location and departures" $ do
+       authKey     <- apiAuthKey
+       utcNow      <- getCurrentTime
+       detail' <- runEitherT $ do
+         stopId'     <- (_stopLocationId . head) <$> locationName Nothing authKey "Leipzig"
+         journeyRef' <- (_departureJourneyRef . head) <$> departureBoard Nothing authKey stopId' someTime
+         journeyDetail Nothing authKey journeyRef'
+       -- currently likely broken due to API not accepting proper formatted journeyRef urls
+       assertBool (show detail') $ isRight detail'
   ]

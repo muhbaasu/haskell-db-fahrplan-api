@@ -114,8 +114,8 @@ apiFormat = Just FormatJSON
 locationName :: Maybe ApiLanguage ->
                 AuthKey ->
                 Text ->
-                IO (Either ServantError [StopLocation])
-locationName l k i = runEitherT $ (_stopLocation . _locationList) <$> locationName_ apiFormat lang key input
+                EitherT ServantError IO [StopLocation]
+locationName l k i = (_stopLocation . _locationList) <$> locationName_ apiFormat lang key input
   where lang      = Just $ fromMaybe English l
         key       = Just k
         input     = Just i
@@ -124,8 +124,8 @@ departureBoard :: Maybe ApiLanguage ->
                   AuthKey ->
                   StopId ->
                   LocalTime ->
-                  IO (Either ServantError [Departure])
-departureBoard l k s lt = runEitherT $ _departure <$>  departureBoard_ apiFormat lang key stop day time
+                  EitherT ServantError IO [Departure]
+departureBoard l k s lt = _departure <$>  departureBoard_ apiFormat lang key stop day time
   where lang      = Just $ fromMaybe English l
         key       = Just k
         stop      = Just s
@@ -136,8 +136,8 @@ arrivalBoard :: Maybe ApiLanguage ->
                 AuthKey ->
                 StopId ->
                 LocalTime ->
-                IO (Either ServantError [Arrival])
-arrivalBoard l k s lt = runEitherT $ _arrival <$> arrivalBoard_ apiFormat lang key stop day time
+                EitherT ServantError IO [Arrival]
+arrivalBoard l k s lt = _arrival <$> arrivalBoard_ apiFormat lang key stop day time
   where lang      = Just $ fromMaybe English l
         key       = Just k
         stop      = Just s
@@ -147,8 +147,8 @@ arrivalBoard l k s lt = runEitherT $ _arrival <$> arrivalBoard_ apiFormat lang k
 journeyDetail :: Maybe ApiLanguage ->
                  AuthKey ->
                  JourneyRef ->
-                 IO (Either ServantError Journey)
-journeyDetail l k r = runEitherT $ _journeyDetail <$> journeyDetail_ apiFormat lang key ref date evaId sType
+                 EitherT ServantError IO Journey
+journeyDetail l k r = _journeyDetail <$> journeyDetail_ apiFormat lang key ref date evaId sType
   where lang       = Just $ fromMaybe English l
         key        = Just k
         refDetails = rightToMaybe <$> parseJourneyRefURI $ _journeyRef r
