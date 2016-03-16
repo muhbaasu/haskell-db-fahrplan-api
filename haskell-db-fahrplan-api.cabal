@@ -20,6 +20,7 @@ library
                      , Web.DeutscheBahn.API.Schedule.API
                      , Web.DeutscheBahn.API.Schedule.Data
                      , Web.DeutscheBahn.API.Schedule.JourneyRefURIParser
+                     , Web.DeutscheBahn.API.Schedule.Response
   -- other-modules:
   -- other-extensions:
   build-depends:       aeson          >=0.9

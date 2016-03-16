@@ -19,6 +19,7 @@ import           Servant.Client
 
 import Web.DeutscheBahn.API.Schedule.Data
 import Web.DeutscheBahn.API.Schedule.JourneyRefURIParser
+import Web.DeutscheBahn.API.Schedule.Response
 
 data ApiFormat = FormatJSON | FormatXML
 
@@ -40,37 +41,10 @@ instance ToText ApiLanguage where
   toText English = "english"
   toText German  = "german"
 
-data LocationResponse = LocationResponse
-  { _locationList :: LocationList
-  } deriving (Show, Eq)
-
-instance FromJSON LocationResponse where
-  parseJSON (Object v) = LocationResponse <$> v .: "LocationList"
-
-data DepartureBoardResponse = DepartureBoardResponse
-  { _departure :: [Departure] } deriving (Show, Eq)
-
-instance FromJSON DepartureBoardResponse where
-  parseJSON (Object v) = DepartureBoardResponse <$>
-                          ((v .: "DepartureBoard") >>= (.: "Departure"))
-
-data ArrivalBoardResponse = ArrivalBoardResponse
-  { _arrival :: [Arrival]} deriving (Show, Eq)
-
-instance FromJSON ArrivalBoardResponse where
-  parseJSON (Object v) = ArrivalBoardResponse <$>
-                          ((v .: "ArrivalBoard") >>= (.: "Arrival"))
-
 newtype AuthKey = AuthKey {_unAuthKey :: Text} deriving (Show, Eq)
 
 instance ToText AuthKey where
   toText = _unAuthKey
-
-data JourneyDetailsResponse = JourneyDetailsResponse
-  { _journeyDetail :: Journey} deriving (Show, Eq)
-
-instance FromJSON JourneyDetailsResponse where
-  parseJSON (Object v) = JourneyDetailsResponse <$> ( v .: "JourneyDetail")
 
 type DeutscheBahnAPI =
   "bin/rest.exe/location.name"
