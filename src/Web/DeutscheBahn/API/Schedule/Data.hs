@@ -96,37 +96,49 @@ instance ToJSON StopLocation where
                     ]
 
 data TransportType =
-    ICE
+    CNL
+  | EC
+  | ICE
   | IC
   | IRE
   | RE
   | SBahn
+  | TGV
   | UnknownTransport Text
   deriving (Show, Eq)
 
 instance FromJSON TransportType where
+  parseJSON (String "CNL")    = return CNL
+  parseJSON (String "EC")     = return EC
   parseJSON (String "ICE")    = return ICE
   parseJSON (String "IC")     = return IC
   parseJSON (String "IRE")    = return IRE
   parseJSON (String "RE")     = return RE
   parseJSON (String "S")      = return SBahn
+  parseJSON (String "TGV")    = return TGV
   parseJSON (String unknown)  = return $ UnknownTransport unknown
   parseJSON invalid           = typeMismatch "TransportType" invalid
 
 instance ToJSON TransportType where
+  toJSON CNL                  = "CNL"
+  toJSON EC                   = "EC"
   toJSON ICE                  = "ICE"
   toJSON IC                   = "IC"
   toJSON IRE                  = "IRE"
   toJSON RE                   = "RE"
   toJSON SBahn                = "S"
+  toJSON TGV                  = "TGV"
   toJSON (UnknownTransport t) = String t
 
 toTransportType :: Text -> TransportType
+toTransportType "CNL"   = CNL
+toTransportType "EC"    = EC
 toTransportType "ICE"   = ICE
 toTransportType "IC"    = IC
 toTransportType "IRE"   = IRE
 toTransportType "RE"    = RE
 toTransportType "S"     = SBahn
+toTransportType "TGV"   = TGV
 toTransportType unknown = UnknownTransport unknown
 
 data Stop = Stop
