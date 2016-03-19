@@ -98,6 +98,7 @@ instance ToJSON StopLocation where
 data TransportType =
     CNL
   | EC
+  | EN
   | ICE
   | IC
   | IRE
@@ -110,6 +111,7 @@ data TransportType =
 instance FromJSON TransportType where
   parseJSON (String "CNL")    = return CNL
   parseJSON (String "EC")     = return EC
+  parseJSON (String "EN")     = return EN
   parseJSON (String "ICE")    = return ICE
   parseJSON (String "IC")     = return IC
   parseJSON (String "IRE")    = return IRE
@@ -122,6 +124,7 @@ instance FromJSON TransportType where
 instance ToJSON TransportType where
   toJSON CNL                  = "CNL"
   toJSON EC                   = "EC"
+  toJSON EN                   = "EN"
   toJSON ICE                  = "ICE"
   toJSON IC                   = "IC"
   toJSON IRE                  = "IRE"
@@ -133,6 +136,7 @@ instance ToJSON TransportType where
 toTransportType :: Text -> TransportType
 toTransportType "CNL"   = CNL
 toTransportType "EC"    = EC
+toTransportType "EN"    = EN
 toTransportType "ICE"   = ICE
 toTransportType "IC"    = IC
 toTransportType "IRE"   = IRE
