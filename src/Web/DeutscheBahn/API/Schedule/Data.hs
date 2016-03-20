@@ -16,8 +16,10 @@ import           Data.Time.Format               (FormatTime, defaultTimeLocale, 
 import           GHC.Generics                   (Generic)
 import           Servant.API                    (ToText(..))
 
-newtype RouteIndex = RouteIndex {unRouteIndex :: Int} deriving (Eq, Show, Generic, ToJSON, FromJSON)
-newtype StopId     = StopId     {unStopId     :: Text} deriving (Eq, Show, Generic, ToJSON, FromJSON)
+newtype RouteIndex = RouteIndex {unRouteIndex :: Int}  deriving (Eq, Show, Generic, ToJSON, FromJSON, Ord)
+newtype StopId     = StopId     {unStopId     :: Text} deriving (Eq, Show, Generic, ToJSON, FromJSON, Ord)
+newtype Ref        = Ref        {unRef :: Text}        deriving (Eq, Show, ToText, Ord)
+newtype EvaId      = EvaId      {unEvaId :: Text}      deriving (Eq, Show, ToText, Ord)
 
 instance ToText StopId where
   toText = unStopId
@@ -37,10 +39,6 @@ formatApiTime = formatTime defaultTimeLocale "%H:%M"
 -- | format date to e.g. 2016-02-22
 formatApiDate :: FormatTime t => t -> String
 formatApiDate = formatTime defaultTimeLocale "%Y-%m-%d"
-
-newtype Ref = Ref {unRef :: Text} deriving (Eq, Show, ToText)
-
-newtype EvaId = EvaId {unEvaId :: Text} deriving (Eq, Show, ToText)
 
 data RefDetails = RefDetails
   { _refDetailsDate  :: Day
