@@ -3,6 +3,7 @@
 -- | Type definitions for the Fahrplan API
 module Web.DeutscheBahn.API.Schedule.Data where
 
+import           Control.Applicative            ((<|>))
 import           Control.Lens.Getter            (view)
 import           Control.Lens.TH                (makeLenses)
 import           Data.Aeson
@@ -294,7 +295,7 @@ makeLenses ''Arrival
 instance FromJSON Arrival where
   parseJSON (Object v) = Arrival <$>
                           v .: "name" <*>
-                          (toTransportType <$> v .: "type") <*>
+                          (toTransportType <$> v .: "type" <|> v .: "tyte") <*>
                           (StopId  <$> v .: "stopid") <*> -- API sends Int as String
                           (LocalTime <$>
                              (parseApiDate <$> v .: "date") <*>
@@ -334,7 +335,7 @@ makeLenses ''Departure
 instance FromJSON Departure where
   parseJSON (Object v) = Departure <$>
                           v .: "name" <*>
-                          (toTransportType <$> v .: "type") <*>
+                          (toTransportType <$> (v .: "type" <|> v .: "tyte")) <*>
                           (StopId  <$> v .: "stopid") <*>
                           (LocalTime <$>
                              (parseApiDate <$> v .: "date") <*>
@@ -343,7 +344,7 @@ instance FromJSON Departure where
                           v .: "direction" <*>
                           v .:? "track" <*>
                           v .: "JourneyDetailRef"
-  parseJSON invalid    = typeMismatch "Arrival" invalid
+  parseJSON invalid    = typeMismatch "Departure" invalid
 
 instance ToJSON Departure where
   toJSON a = object [ "name"             .= _departureName a
