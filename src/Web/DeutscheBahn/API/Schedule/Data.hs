@@ -295,7 +295,7 @@ makeLenses ''Arrival
 instance FromJSON Arrival where
   parseJSON (Object v) = Arrival <$>
                           v .: "name" <*>
-                          (toTransportType <$> v .: "type" <|> v .: "tyte") <*>
+                          (toTransportType <$> v .: "type" <|> v .: "tyte" <|> v .: "tyoe") <*>
                           (StopId  <$> v .: "stopid") <*> -- API sends Int as String
                           (LocalTime <$>
                              (parseApiDate <$> v .: "date") <*>
@@ -335,7 +335,7 @@ makeLenses ''Departure
 instance FromJSON Departure where
   parseJSON (Object v) = Departure <$>
                           v .: "name" <*>
-                          (toTransportType <$> (v .: "type" <|> v .: "tyte")) <*>
+                          (toTransportType <$> (v .: "type" <|> v .: "tyte" <|> v .: "tyoe")) <*>
                           (StopId  <$> v .: "stopid") <*>
                           (LocalTime <$>
                              (parseApiDate <$> v .: "date") <*>
